@@ -232,9 +232,15 @@ export default function App() {
         )}
 
         {/* CLASSEMENT */}
-        {page === "classement" && (
-          <div>
-            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Classement</h2>
+{page === "classement" && (
+  <div>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+      <h2 style={{ color: COLORS.gold, margin: 0 }}>Classement</h2>
+      <select value={semaine?.id || ""} onChange={e => { const s = semaines.find(x => x.id === parseInt(e.target.value)); setSemaine(s) }}
+        style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.card, color: COLORS.text }}>
+        {semaines.map(s => <option key={s.id} value={s.id}>{s.nom}{s.active ? " (en cours)" : ""}</option>)}
+      </select>
+    </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
@@ -245,7 +251,7 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {scores.sort((a,b) => b.points - a.points).map((s, i) => (
+                  {scores.filter(s => s.semaine_id === semaine?.id).sort((a,b) => b.points - a.points).map((s, i) => (
                     <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
                       <td style={{ padding: "12px 10px" }}>{i < 3 ? MEDALS[i] : `#${i+1}`}</td>
                       <td style={{ padding: "12px 10px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
