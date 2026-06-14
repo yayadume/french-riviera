@@ -1,253 +1,441 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./supabase"
 
+const COLORS = {
+  bg: "#050d1a",
+  sidebar: "#080f1f",
+  card: "#0d1b2e",
+  border: "#1a2d4a",
+  gold: "#c9a84c",
+  goldLight: "#e8c97a",
+  blue: "#1a3a6b",
+  blueLight: "#2a5298",
+  text: "#e8eaf0",
+  textMuted: "#6b7fa3",
+  success: "#4ade80",
+  danger: "#f87171",
+  warning: "#fbbf24"
+}
+
+const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
+const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison"]
+const MEDALS = ["🥇","🥈","🥉"]
+
+const s = (obj) => Object.assign({}, obj)
+
 export default function App() {
   const [session, setSession] = useState(null)
   const [member, setMember] = useState(null)
-  const [scores, setScores] = useState([])
-  const [editions, setEditions] = useState([])
+  const [page, setPage] = useState("dashboard")
   const [members, setMembers] = useState([])
-  const [editionId, setEditionId] = useState(null)
-  const [page, setPage] = useState("classement")
-  const [form, setForm] = useState({ edition_id: "", type: "action", quantity: 1 })
-  const [message, setMessage] = useState("")
+  const [semaines, setSemaines] = useState([])
+  const [semaine, setSemaine] = useState(null)
+  const [scores, setScores] = useState([])
+  const [salaires, setSalaires] = useState([])
+  const [activities, setActivities] = useState([])
+  const [drogues, setDrogues] = useState([])
   const [loginForm, setLoginForm] = useState({ email: "", password: "" })
   const [loginError, setLoginError] = useState("")
+  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1 })
+  const [message, setMessage] = useState("")
+  const [newMember, setNewMember] = useState("")
+
+  const isAdmin = member?.name === "DUME"
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+    supabase.auth.onAuthStateChange((_e, s) => setSession(s))
   }, [])
 
   useEffect(() => {
     if (!session) return
-    supabase.from("members").select("*").eq("user_id", session.user.id).single()
-      .then(({ data }) => setMember(data))
-    supabase.from("editions").select("*").then(({ data }) => {
-      setEditions(data)
-      if (data.length > 0) {
-        setEditionId(data[0].id)
-        setForm(f => ({ ...f, edition_id: data[0].id }))
-      }
-    })
-    supabase.from("members").select("*").then(({ data }) => setMembers(data))
+    supabase.from("members").select("*").eq("user_id", session.user.id).single().then(({ data }) => setMember(data))
+    loadData()
   }, [session])
 
   useEffect(() => {
-    if (!editionId) return
-    supabase.from("scores").select("*").eq("edition_id", editionId).then(({ data }) => setScores(data))
-  }, [editionId])
+    if (!semaine) return
+    supabase.from("scores").select("*").then(({ data }) => setScores(data || []))
+    supabase.from("salaires").select("*").eq("semaine_id", semaine.id).then(({ data }) => setSalaires(data || []))
+    supabase.from("activities").select("*").eq("semaine_id", semaine.id).order("created_at", { ascending: false }).then(({ data }) => setActivities(data || []))
+  }, [semaine])
+
+  const loadData = async () => {
+    const { data: s } = await supabase.from("semaines").select("*").order("debut", { ascending: false })
+    setSemaines(s || [])
+    const active = s?.find(x => x.active) || s?.[0]
+    setSemaine(active)
+    setForm(f => ({ ...f, semaine_id: active?.id || "" }))
+    const { data: m } = await supabase.from("members").select("*").order("name")
+    setMembers(m || [])
+    const { data: d } = await supabase.from("drogues").select("*").order("nom")
+    setDrogues(d || [])
+  }
 
   const handleLogin = async () => {
     setLoginError("")
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginForm.email,
-      password: loginForm.password
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email: loginForm.email, password: loginForm.password })
     if (error) setLoginError("Email ou mot de passe incorrect")
   }
 
   const handleSubmit = async () => {
-    if (!member) return
+    const targetId = isAdmin ? parseInt(form.member_id) : member?.id
+    if (!targetId) return setMessage("❌ Sélectionne un membre")
     const { error } = await supabase.from("activities").insert([{
-      member_id: member.id,
-      edition_id: parseInt(form.edition_id),
+      member_id: targetId,
+      semaine_id: parseInt(form.semaine_id),
       type: form.type,
+      drogue: ["vente","Plantation"].includes(form.type) ? form.drogue : null,
       quantity: parseInt(form.quantity)
     }])
-    if (error) {
-      setMessage("❌ Erreur : " + error.message)
-    } else {
+    if (error) setMessage("❌ Erreur : " + error.message)
+    else {
       setMessage("✅ Activité ajoutée !")
-      supabase.from("scores").select("*").eq("edition_id", editionId).then(({ data }) => setScores(data))
+      loadData()
       setTimeout(() => setMessage(""), 3000)
     }
   }
 
-  const medals = ["🥇", "🥈", "🥉"]
-  const types = ["vente", "Plantation", "Apu", "Cambu", "Go fast", "Atm", "Armu", "Fleeca", "Prison"]
-const drogues = ["HERO", "SPOREX", "TRANQ", "PURPLE", "MEXICANA", "COKE", "CARTE PP", "CRACK", "WEED", "METH", "ECSTASY"]
+  const handleAddMember = async () => {
+    if (!newMember.trim()) return
+    await supabase.from("members").insert([{ name: newMember.toUpperCase(), active: true }])
+    setNewMember("")
+    loadData()
+  }
 
-  const navBtn = (label, target) => (
-    <button onClick={() => setPage(target)} style={{
-      padding: "8px 24px", borderRadius: 8, border: "1px solid #555", cursor: "pointer",
-      background: page === target ? "#fff" : "transparent",
-      color: page === target ? "#111" : "#fff", fontWeight: 500
-    }}>{label}</button>
+  const handleDeleteMember = async (id) => {
+    if (!confirm("Supprimer ce membre ?")) return
+    await supabase.from("members").delete().eq("id", id)
+    loadData()
+  }
+
+  const myScores = scores.find(s => s.member_id === member?.id)
+  const mySalaire = salaires.find(s => s.member_id === member?.id)
+  const myActivities = activities.filter(a => a.member_id === member?.id).slice(0, 5)
+
+  const input = (val, onChange, type = "text", placeholder = "") => (
+    <input type={type} value={val} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
   )
 
-  const editionBtn = (e) => (
-    <button key={e.id} onClick={() => setEditionId(e.id)} style={{
-      padding: "6px 16px", borderRadius: 8, border: "1px solid #555", cursor: "pointer",
-      background: editionId === e.id ? "#fff" : "transparent",
-      color: editionId === e.id ? "#111" : "#fff"
-    }}>{e.name}</button>
+  const select = (val, onChange, options) => (
+    <select value={val} onChange={e => onChange(e.target.value)}
+      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 14 }}>
+      {options}
+    </select>
+  )
+
+  const card = (children, style = {}) => (
+    <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1.25rem", ...style }}>
+      {children}
+    </div>
+  )
+
+  const statCard = (label, value, color = COLORS.gold) => (
+    <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+      <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
+    </div>
+  )
+
+  const goldBtn = (label, onClick, style = {}) => (
+    <button onClick={onClick} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#0a1628", fontWeight: 700, cursor: "pointer", fontSize: 14, ...style }}>{label}</button>
   )
 
   if (!session) return (
-    <div style={{ minHeight: "100vh", background: "#111", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
-      <div style={{ width: 380, background: "#1a1a1a", borderRadius: 16, padding: "2rem", border: "1px solid #333" }}>
-        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-          <img src="/logo.png" alt="French Riviera" style={{ height: 70, objectFit: "contain" }} />
+    <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
+      <div style={{ width: 400, background: COLORS.card, borderRadius: 20, padding: "2.5rem", border: `1px solid ${COLORS.border}` }}>
+        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <img src="/frenchriviera.png" alt="French Riviera" style={{ height: 120, objectFit: "contain" }} />
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 500, color: "#ccc" }}>Email</label>
-          <input type="email" value={loginForm.email} onChange={e => setLoginForm({ ...loginForm, email: e.target.value })}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", boxSizing: "border-box" }} />
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
+          {input(loginForm.email, v => setLoginForm({ ...loginForm, email: v }), "email")}
         </div>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 500, color: "#ccc" }}>Mot de passe</label>
-          <input type="password" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
-            onKeyDown={e => e.key === "Enter" && handleLogin()}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", boxSizing: "border-box" }} />
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
+          {input(loginForm.password, v => setLoginForm({ ...loginForm, password: v }), "password")}
         </div>
-        {loginError && <p style={{ color: "#f87171", textAlign: "center", marginBottom: 12 }}>{loginError}</p>}
-        <button onClick={handleLogin} style={{
-          width: "100%", padding: 12, borderRadius: 8, border: "none",
-          background: "#fff", color: "#111", fontSize: 16, cursor: "pointer", fontWeight: 600
-        }}>Se connecter</button>
+        {loginError && <p style={{ color: COLORS.danger, textAlign: "center", marginBottom: 14, fontSize: 13 }}>{loginError}</p>}
+        {goldBtn("Se connecter", handleLogin, { width: "100%", padding: 14, fontSize: 16 })}
       </div>
     </div>
   )
 
   return (
-    <div style={{ minHeight: "100vh", background: "#111", fontFamily: "sans-serif", color: "#fff" }}>
+    <div style={{ minHeight: "100vh", background: COLORS.bg, fontFamily: "sans-serif", color: COLORS.text, display: "flex" }}>
 
-      {/* HEADER */}
-      <div style={{ background: "#1a1a1a", borderBottom: "1px solid #333", padding: "12px 2rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <img src="/logo.png" alt="French Riviera" style={{ height: 44, objectFit: "contain" }} />
-        <div style={{ display: "flex", gap: 8 }}>
-          {navBtn("Classement", "classement")}
-          {navBtn("Membres", "membres")}
-          {navBtn("Saisir activité", "saisie")}
+      {/* SIDEBAR */}
+      <div style={{ width: 220, background: COLORS.sidebar, borderRight: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", position: "fixed", height: "100vh", zIndex: 10 }}>
+        <div style={{ padding: "1.5rem 1rem", borderBottom: `1px solid ${COLORS.border}`, textAlign: "center" }}>
+          <img src="/frenchriviera.png" alt="FR" style={{ height: 70, objectFit: "contain" }} />
+          <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
+          {isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ color: "#aaa", fontSize: 14 }}>👤 {member?.name}</span>
-          <button onClick={() => supabase.auth.signOut()} style={{
-            padding: "6px 14px", borderRadius: 8, border: "1px solid #555",
-            background: "transparent", color: "#fff", cursor: "pointer", fontSize: 13
-          }}>Déconnexion</button>
+
+        <nav style={{ flex: 1, padding: "1rem 0" }}>
+          {[
+            { id: "dashboard", icon: "🏠", label: "Tableau de bord" },
+            { id: "classement", icon: "🏆", label: "Classement" },
+            { id: "salaires", icon: "💰", label: "Salaires" },
+            { id: "hierarchie", icon: "👑", label: "Hiérarchie" },
+            { id: "membres", icon: "👥", label: "Membres" },
+            { id: "saisie", icon: "✏️", label: "Saisir activité" },
+            ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
+          ].map(item => (
+            <button key={item.id} onClick={() => setPage(item.id)} style={{
+              width: "100%", padding: "12px 20px", border: "none", background: page === item.id ? `${COLORS.blue}88` : "transparent",
+              color: page === item.id ? COLORS.gold : COLORS.textMuted, textAlign: "left", cursor: "pointer", fontSize: 14,
+              borderLeft: page === item.id ? `3px solid ${COLORS.gold}` : "3px solid transparent",
+              display: "flex", alignItems: "center", gap: 10
+            }}>
+              <span>{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
+          <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
+            Déconnexion
+          </button>
         </div>
       </div>
 
       {/* CONTENU */}
-      <div style={{ maxWidth: 700, margin: "0 auto", padding: "2rem 1rem" }}>
+      <div style={{ marginLeft: 220, flex: 1, padding: "2rem" }}>
 
-        {page === "classement" && <>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: "1.5rem" }}>
-            {editions.map(e => editionBtn(e))}
+        {/* DASHBOARD */}
+        {page === "dashboard" && (
+          <div>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
+              {statCard("Points totaux", myScores?.points ?? 0, COLORS.gold)}
+              {statCard("Salaire semaine", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
+              {statCard("Activités semaine", myActivities.length)}
+            </div>
+            {card(
+              <>
+                <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dernières activités</h3>
+                {myActivities.length === 0
+                  ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucune activité cette semaine.</p>
+                  : myActivities.map(a => (
+                    <div key={a.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, fontSize: 14 }}>
+                      <span style={{ color: COLORS.gold }}>{a.type}</span>
+                      {a.drogue && <span style={{ color: COLORS.textMuted }}>{a.drogue}</span>}
+                      <span>×{a.quantity}</span>
+                    </div>
+                  ))
+                }
+              </>
+            )}
           </div>
-          {scores.length === 0
-  ? <p style={{ textAlign: "center", color: "#666" }}>Aucune activité pour cette édition.</p>
-  : <>
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead>
-          <tr style={{ background: "#222", color: "#aaa" }}>
-            <th style={{ padding: "10px 8px", textAlign: "left" }}>Rang</th>
-            <th style={{ padding: "10px 8px", textAlign: "left" }}>Membre</th>
-            <th style={{ padding: "10px 8px", textAlign: "center", color: "#4ade80" }}>Points</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🌿 Plant.</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>💊 Vente</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🏠 Cambu</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🏧 ATM</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🚔 APU</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🚗 Go fast</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>⛓️ Prison</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🚛 Armu</th>
-            <th style={{ padding: "10px 8px", textAlign: "center" }}>🏦 Fleeca</th>
-          </tr>
-        </thead>
-        <tbody>
-          {scores.map((s, i) => (
-            <tr key={s.member_id} style={{ background: i === 0 ? "#2a2510" : i % 2 === 0 ? "#1a1a1a" : "#161616", borderBottom: "1px solid #222" }}>
-              <td style={{ padding: "10px 8px", textAlign: "left" }}>
-                {i < 3 ? medals[i] : `#${i + 1}`}
-              </td>
-              <td style={{ padding: "10px 8px", fontWeight: 600 }}>{s.member_name}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center", fontWeight: 700, color: "#4ade80" }}>{s.points}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.plantation}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.vente}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.cambu}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.atm}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.apu}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.go_fast}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center", color: s.prison > 0 ? "#f87171" : "#fff" }}>{s.prison}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.armu}</td>
-              <td style={{ padding: "10px 8px", textAlign: "center" }}>{s.fleeca}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </>
-}
-        </>}
+        )}
 
+        {/* CLASSEMENT */}
+        {page === "classement" && (
+          <div>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Classement</h2>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: COLORS.blue }}>
+                    {["Rang","Membre","Points","🌿 Plant.","💊 Vente","🏠 Cambu","🏧 ATM","🚔 APU","🚗 Go fast","⛓️ Prison","🚛 Armu","🏦 Fleeca"].map(h => (
+                      <th key={h} style={{ padding: "12px 10px", textAlign: h === "Rang" || h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {scores.sort((a,b) => b.points - a.points).map((s, i) => (
+                    <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                      <td style={{ padding: "12px 10px" }}>{i < 3 ? MEDALS[i] : `#${i+1}`}</td>
+                      <td style={{ padding: "12px 10px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: COLORS.gold }}>{s.points}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.plantation}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.vente}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.cambu}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.atm}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.apu}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.go_fast}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center", color: s.prison > 0 ? COLORS.danger : COLORS.text }}>{s.prison}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.armu}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.fleeca}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* SALAIRES */}
+        {page === "salaires" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+              <h2 style={{ color: COLORS.gold }}>Salaires</h2>
+              <select value={semaine?.id || ""} onChange={e => { const s = semaines.find(x => x.id === parseInt(e.target.value)); setSemaine(s) }}
+                style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.card, color: COLORS.text }}>
+                {semaines.map(s => <option key={s.id} value={s.id}>{s.nom}</option>)}
+              </select>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: COLORS.blue }}>
+                    {["Membre","Salaire Ventes","Salaire Plantations","Total"].map(h => (
+                      <th key={h} style={{ padding: "12px 16px", textAlign: h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => (
+                    <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                      <td style={{ padding: "12px 16px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_vente).toLocaleString()} $</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_plantation).toLocaleString()} $</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{Math.round(s.salaire_total).toLocaleString()} $</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* HIERARCHIE */}
+        {page === "hierarchie" && (
+          <div style={{ textAlign: "center" }}>
+            <h2 style={{ color: COLORS.gold, marginBottom: "2rem" }}>Hiérarchie</h2>
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: "1.5rem" }}>
+              {[{n:"DUME",r:"Chef"},{n:"JORDAN",r:"Capo"}].map(({n,r}) => (
+                <div key={n} style={{ background: `${COLORS.blue}88`, border: `2px solid ${COLORS.gold}`, borderRadius: 12, padding: "20px 32px", minWidth: 130 }}>
+                  <div style={{ fontSize: 32 }}>👑</div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: COLORS.gold, marginTop: 8 }}>{n}</div>
+                  <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>{r}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
+              <div style={{ background: `${COLORS.blue}44`, border: `2px solid ${COLORS.blueLight}`, borderRadius: 12, padding: "20px 32px", minWidth: 130 }}>
+                <div style={{ fontSize: 32 }}>🥈</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: COLORS.text, marginTop: 8 }}>CIRO</div>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>Sous Capo</div>
+              </div>
+            </div>
+            <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />
+            <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.1em" }}>Soldats</div>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}>
+              {["PARKER","TONY","MARTINO","MAMADE","DON","KYKY","NEXYO","JON","JASON"].map(n => (
+                <div key={n} style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "14px 20px", minWidth: 100 }}>
+                  <div style={{ fontSize: 24 }}>⚔️</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: COLORS.text, marginTop: 6 }}>{n}</div>
+                  <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Soldat</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MEMBRES */}
         {page === "membres" && (
           <div>
-            <h2 style={{ marginBottom: "1rem" }}>Membres du groupe</h2>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Membres</h2>
             {members.map((m, i) => (
-              <div key={m.id} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "14px 20px", marginBottom: 8, borderRadius: 10,
-                border: "1px solid #333", background: "#1a1a1a"
-              }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%", background: "#333",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 700, fontSize: 14
-                }}>{m.name[0]}</div>
-                <span style={{ flex: 1, fontWeight: 500 }}>{m.name}</span>
-                <span style={{ fontSize: 12, color: m.active ? "#4ade80" : "#f87171" }}>
-                  {m.active ? "✅ Actif" : "❌ Inactif"}
-                </span>
+              <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", marginBottom: 8, borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.card }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: COLORS.blue, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: COLORS.gold }}>{m.name[0]}</div>
+                <span style={{ flex: 1, fontWeight: 600 }}>{m.name}</span>
+                <span style={{ fontSize: 12, color: m.active ? COLORS.success : COLORS.danger }}>{m.active ? "✅ Actif" : "❌ Inactif"}</span>
               </div>
             ))}
           </div>
         )}
 
+        {/* SAISIE */}
         {page === "saisie" && (
-          <div style={{ background: "#1a1a1a", borderRadius: 12, padding: "1.5rem", border: "1px solid #333" }}>
-            <p style={{ marginBottom: 16, color: "#aaa" }}>Tu saisis une activité pour <strong style={{ color: "#fff" }}>{member?.name}</strong></p>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 500, color: "#ccc" }}>Édition</label>
-              <select value={form.edition_id} onChange={e => setForm({ ...form, edition_id: e.target.value })}
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff" }}>
-                {editions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
-            </div>
-            <div style={{ marginBottom: 12 }}>
-  <label style={{ display: "block", marginBottom: 4, fontWeight: 500, color: "#ccc" }}>Type d'activité</label>
-  <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value, drogue: "" })}
-    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff" }}>
-    {types.map(t => <option key={t} value={t}>{t}</option>)}
-  </select>
-</div>
-
-{form.type === "vente" && (
-  <div style={{ marginBottom: 12 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500, color: "#ccc" }}>Drogue vendue</label>
-    <select value={form.drogue || ""} onChange={e => setForm({ ...form, drogue: e.target.value })}
-      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff" }}>
-      <option value="">-- Choisir --</option>
-      {drogues.map(d => <option key={d} value={d}>{d}</option>)}
-    </select>
-  </div>
-)}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 500, color: "#ccc" }}>Quantité</label>
-              <input type="number" min="1" value={form.quantity}
-                onChange={e => setForm({ ...form, quantity: e.target.value })}
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", boxSizing: "border-box" }} />
-            </div>
-            <button onClick={handleSubmit} style={{
-              width: "100%", padding: 12, borderRadius: 8, border: "none",
-              background: "#fff", color: "#111", fontSize: 16, cursor: "pointer", fontWeight: 600
-            }}>Ajouter l'activité</button>
-            {message && <p style={{ textAlign: "center", marginTop: 12, fontWeight: 500 }}>{message}</p>}
+          <div style={{ maxWidth: 500 }}>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Saisir une activité</h2>
+            {card(<>
+              {isAdmin && (
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Membre</label>
+                  {select(form.member_id, v => setForm({...form, member_id: v}),
+                    [<option key="" value="">-- Choisir --</option>, ...members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)]
+                  )}
+                </div>
+              )}
+              {!isAdmin && <p style={{ color: COLORS.textMuted, marginBottom: 14, fontSize: 14 }}>Saisie pour <strong style={{ color: COLORS.gold }}>{member?.name}</strong></p>}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Semaine</label>
+                {select(form.semaine_id, v => setForm({...form, semaine_id: v}),
+                  semaines.map(s => <option key={s.id} value={s.id}>{s.nom}</option>)
+                )}
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Type d'activité</label>
+                {select(form.type, v => setForm({...form, type: v, drogue: ""}),
+                  TYPES.map(t => <option key={t} value={t}>{t}</option>)
+                )}
+              </div>
+              {["vente","Plantation"].includes(form.type) && (
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
+                  {select(form.drogue, v => setForm({...form, drogue: v}),
+                    [<option key="" value="">-- Choisir --</option>, ...DROGUES_LIST.map(d => <option key={d} value={d}>{d}</option>)]
+                  )}
+                </div>
+              )}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
+                {input(form.quantity, v => setForm({...form, quantity: v}), "number")}
+              </div>
+              {goldBtn("Ajouter l'activité", handleSubmit, { width: "100%" })}
+              {message && <p style={{ textAlign: "center", marginTop: 12, color: message.includes("✅") ? COLORS.success : COLORS.danger }}>{message}</p>}
+            </>)}
           </div>
         )}
+
+        {/* ADMIN */}
+        {page === "admin" && isAdmin && (
+          <div>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
+              <div style={{ display: "flex", gap: 10 }}>
+                {input(newMember, setNewMember, "text", "Nom du membre")}
+                {goldBtn("Ajouter", handleAddMember)}
+              </div>
+            </>, { marginBottom: 16 })}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Gérer les membres</h3>
+              {members.map(m => (
+                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+                  <span style={{ flex: 1, fontWeight: 600 }}>{m.name}</span>
+                  <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
+                </div>
+              ))}
+            </>, { marginBottom: 16 })}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Créer une semaine</h3>
+              <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Les semaines vont du dimanche 19h au dimanche 19h suivant.</p>
+              {goldBtn("Créer semaine suivante", async () => {
+                const last = semaines[0]
+                if (!last) return
+                const debut = new Date(last.fin)
+                const fin = new Date(debut)
+                fin.setDate(fin.getDate() + 7)
+                await supabase.from("semaines").update({ active: false }).eq("active", true)
+                await supabase.from("semaines").insert([{
+                  nom: `Semaine ${semaines.length + 1}`,
+                  debut: debut.toISOString(),
+                  fin: fin.toISOString(),
+                  active: true
+                }])
+                loadData()
+              }, { marginTop: 12 })}
+            </>)}
+          </div>
+        )}
+
       </div>
     </div>
   )
