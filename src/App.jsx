@@ -97,13 +97,13 @@ export default function App() {
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: "2rem 1rem", fontFamily: "sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <h1 style={{ margin: 0 }}>🏆 French Riviera</h1>
+        <img src="/logo.png" alt="French Riviera" style={{ height: 50, objectFit: "contain" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ color: "#666", fontSize: 14 }}>👤 {member?.name}</span>
           <button onClick={() => supabase.auth.signOut()} style={{
-            padding: "6px 12px", borderRadius: 8, border: "1px solid #ccc",
-            background: "#fff", cursor: "pointer", fontSize: 13
-          }}>Déconnexion</button>
+  padding: "6px 12px", borderRadius: 8, border: "1px solid #ccc",
+  background: "#fff", cursor: "pointer", fontSize: 13, color: "#222"
+}}>Déconnexion</button>
         </div>
       </div>
 
