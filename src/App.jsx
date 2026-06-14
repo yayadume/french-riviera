@@ -227,6 +227,11 @@ export default function App() {
   <span style={{ color: COLORS.textMuted, fontSize: 12 }}>
     {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
   </span>
+  <button onClick={async () => {
+    if (!confirm("Supprimer cette activité ?")) return
+    await supabase.from("activities").delete().eq("id", a.id)
+    loadData()
+  }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
 </div>
                   ))
                 }
