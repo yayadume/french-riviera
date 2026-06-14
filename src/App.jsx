@@ -36,7 +36,7 @@ export default function App() {
   const [drogues, setDrogues] = useState([])
   const [loginForm, setLoginForm] = useState({ email: "", password: "" })
   const [loginError, setLoginError] = useState("")
-  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1 })
+  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date().toISOString().slice(0,16) })
   const [message, setMessage] = useState("")
   const [newMember, setNewMember] = useState("")
 
@@ -86,7 +86,8 @@ export default function App() {
       semaine_id: parseInt(form.semaine_id),
       type: form.type,
       drogue: ["vente","Plantation"].includes(form.type) ? form.drogue : null,
-      quantity: parseInt(form.quantity)
+      quantity: parseInt(form.quantity),
+      created_at: new Date(form.date_heure).toISOString()
     }])
     if (error) setMessage("❌ Erreur : " + error.message)
     else {
@@ -219,11 +220,14 @@ export default function App() {
                 {myActivities.length === 0
                   ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucune activité cette semaine.</p>
                   : myActivities.map(a => (
-                    <div key={a.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, fontSize: 14 }}>
-                      <span style={{ color: COLORS.gold }}>{a.type}</span>
-                      {a.drogue && <span style={{ color: COLORS.textMuted }}>{a.drogue}</span>}
-                      <span>×{a.quantity}</span>
-                    </div>
+                    <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, fontSize: 14 }}>
+  <span style={{ color: COLORS.gold }}>{a.type}</span>
+  {a.drogue && <span style={{ color: COLORS.textMuted }}>{a.drogue}</span>}
+  <span>×{a.quantity}</span>
+  <span style={{ color: COLORS.textMuted, fontSize: 12 }}>
+    {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+  </span>
+</div>
                   ))
                 }
               </>
@@ -394,6 +398,12 @@ export default function App() {
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
                 {input(form.quantity, v => setForm({...form, quantity: v}), "number")}
               </div>
+              <div style={{ marginBottom: 20 }}>
+  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Date & heure</label>
+  <input type="datetime-local" value={form.date_heure}
+    onChange={e => setForm({...form, date_heure: e.target.value})}
+    style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
+</div>
               {goldBtn("Ajouter l'activité", handleSubmit, { width: "100%" })}
               {message && <p style={{ textAlign: "center", marginTop: 12, color: message.includes("✅") ? COLORS.success : COLORS.danger }}>{message}</p>}
             </>)}
