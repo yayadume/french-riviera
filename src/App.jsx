@@ -193,7 +193,7 @@ setStocks(st || [])
   )
 
   return (
-    <div style={{ minHeight: "100vh", background: COLORS.bg, fontFamily: "sans-serif", color: COLORS.text, display: "flex" }}>
+    <div style={{ minHeight: "100vh", background: COLORS.bg, fontFamily: "sans-serif", color: COLORS.text, display: "flex", width: "100%" }}>
 
       {/* SIDEBAR */}
       <div style={{ width: 220, background: COLORS.sidebar, borderRight: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", position: "fixed", height: "100vh", zIndex: 10 }}>
@@ -397,7 +397,7 @@ setStocks(st || [])
 
         {/* SAISIE */}
         {page === "saisie" && (
-          <div style={{ maxWidth: 500 }}>
+            <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Saisir une activité</h2>
             {card(<>
               {isAdmin && (
