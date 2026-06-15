@@ -39,7 +39,9 @@ export default function App() {
   const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date().toISOString().slice(0,16) })
   const [message, setMessage] = useState("")
   const [newMember, setNewMember] = useState("")
-
+const [stocks, setStocks] = useState([])
+const [coffres, setCoffres] = useState([])
+const [stockForm, setStockForm] = useState({ coffre_id: "", item: "", quantite: 1, action: "depose" })
   const isAdmin = member?.name === "DUME"
 
   useEffect(() => {
@@ -70,6 +72,10 @@ export default function App() {
     setMembers(m || [])
     const { data: d } = await supabase.from("drogues").select("*").order("nom")
     setDrogues(d || [])
+    const { data: c } = await supabase.from("coffres").select("*").order("nom")
+setCoffres(c || [])
+const { data: st } = await supabase.from("stock_actuel").select("*")
+setStocks(st || [])
   }
 
   const handleLogin = async () => {
@@ -109,6 +115,21 @@ export default function App() {
     await supabase.from("members").delete().eq("id", id)
     loadData()
   }
+  const handleAddStock = async () => {
+  if (!stockForm.coffre_id || !stockForm.item || !stockForm.quantite) return setMessage("❌ Remplis tous les champs")
+  const { error } = await supabase.from("stock_items").insert([{
+    coffre_id: parseInt(stockForm.coffre_id),
+    item: stockForm.item,
+    quantite: parseInt(stockForm.quantite),
+    action: stockForm.action
+  }])
+  if (error) setMessage("❌ Erreur : " + error.message)
+  else {
+    setMessage("✅ Stock mis à jour !")
+    loadData()
+    setTimeout(() => setMessage(""), 3000)
+  }
+}
 
   const myScores = scores.find(s => s.member_id === member?.id)
   const mySalaire = salaires.find(s => s.member_id === member?.id)
@@ -181,7 +202,8 @@ export default function App() {
             { id: "salaires", icon: "💰", label: "Salaires" },
             { id: "hierarchie", icon: "👑", label: "Hiérarchie" },
             { id: "membres", icon: "👥", label: "Membres" },
-            { id: "saisie", icon: "✏️", label: "Saisir activité" },
+{ id: "stock", icon: "📦", label: "Stock" },
+{ id: "saisie", icon: "✏️", label: "Saisir activité" },
             ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
           ].map(item => (
             <button key={item.id} onClick={() => setPage(item.id)} style={{
@@ -456,7 +478,72 @@ export default function App() {
             </>)}
           </div>
         )}
+{/* STOCK */}
+{page === "stock" && (
+  <div>
+    <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
 
+    {isAdmin && card(<>
+      <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter / Retirer du stock</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Coffre</label>
+          {select(stockForm.coffre_id, v => setStockForm({...stockForm, coffre_id: v}),
+            [<option key="" value="">-- Choisir --</option>, ...coffres.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)]
+          )}
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Action</label>
+          {select(stockForm.action, v => setStockForm({...stockForm, action: v}), [
+            <option key="depose" value="depose">Déposer</option>,
+            <option key="retire" value="retire">Retirer</option>
+          ])}
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Item</label>
+          {input(stockForm.item, v => setStockForm({...stockForm, item: v}), "text", "Ex: COKE, AK47...")}
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
+          {input(stockForm.quantite, v => setStockForm({...stockForm, quantite: v}), "number")}
+        </div>
+      </div>
+      {goldBtn("Valider", handleAddStock, { width: "100%" })}
+      {message && <p style={{ textAlign: "center", marginTop: 12, color: message.includes("✅") ? COLORS.success : COLORS.danger }}>{message}</p>}
+    </>, { marginBottom: 20 })}
+
+    {/* Affichage stock par coffre */}
+    {["Coffre 29", "Coffre 52"].map(nom => {
+      const items = stocks.filter(s => s.coffre === nom)
+      return (
+        <div key={nom} style={{ marginBottom: 20 }}>
+          {card(<>
+            <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 {nom}</h3>
+            {items.length === 0
+              ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
+              : <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ background: COLORS.blue }}>
+                      <th style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold }}>Item</th>
+                      <th style={{ padding: "10px 14px", textAlign: "center", color: COLORS.gold }}>Quantité</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((s, i) => (
+                      <tr key={s.item} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                        <td style={{ padding: "10px 14px" }}>{s.item}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{s.quantite}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+            }
+          </>)}
+        </div>
+      )
+    })}
+  </div>
+)}
       </div>
     </div>
   )
