@@ -16,6 +16,14 @@ const COLORS = {
   danger: "#f87171",
   warning: "#fbbf24"
 }
+const ITEM_IMAGES = {
+  "METH": "/meth.png",
+  "TRANQ": "/tranq.png",
+  "MEXICANA": "/mexicana.png",
+  "CRACK": "/crack.png",
+  "CARTE PP": "/carte-pp.png",
+  "BRANCHE": "/branche.png"
+}
 
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
 const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison"]
@@ -528,14 +536,22 @@ setStocks(st || [])
                       <th style={{ padding: "10px 14px", textAlign: "center", color: COLORS.gold }}>Quantité</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {items.map((s, i) => (
-                      <tr key={s.item} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-                        <td style={{ padding: "10px 14px" }}>{s.item}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{s.quantite}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                <tbody>
+  {items.map((s, i) => (
+    <tr key={s.item} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+      <td style={{ padding: "10px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {ITEM_IMAGES[s.item.toUpperCase()]
+            ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 6, background: "#0a1628", padding: 4 }} />
+            : <div style={{ width: 40, height: 40, borderRadius: 6, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📦</div>
+          }
+          <span>{s.item}</span>
+        </div>
+      </td>
+      <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{s.quantite}</td>
+    </tr>
+  ))}
+</tbody>
                 </table>
             }
           </>)}
