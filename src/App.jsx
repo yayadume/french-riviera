@@ -421,7 +421,7 @@ setStocks(st || [])
                   TYPES.map(t => <option key={t} value={t}>{t}</option>)
                 )}
               </div>
-              {["vente","Plantation"].includes(form.type) && (
+              {form.type === "vente" && (
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
                   {select(form.drogue, v => setForm({...form, drogue: v}),
