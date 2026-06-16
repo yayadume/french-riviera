@@ -458,12 +458,33 @@ setStocks(st || [])
             </>, { marginBottom: 16 })}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Gérer les membres</h3>
-              {members.map(m => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${COLORS.border}` }}>
-                  <span style={{ flex: 1, fontWeight: 600 }}>{m.name}</span>
-                  <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
-                </div>
-              ))}
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+  <thead>
+    <tr style={{ background: COLORS.blue }}>
+      {["Membre","Email","UID","Grade","Action"].map(h => (
+        <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+      ))}
+    </tr>
+  </thead>
+  <tbody>
+    {members.map((m, i) => (
+      <tr key={m.id} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+        <td style={{ padding: "10px 14px", fontWeight: 600 }}>{m.name}</td>
+        <td style={{ padding: "10px 14px", color: COLORS.textMuted }}>{m.email || "—"}</td>
+        <td style={{ padding: "10px 14px", color: COLORS.textMuted, fontSize: 11, fontFamily: "monospace" }}>{m.user_id || "—"}</td>
+        <td style={{ padding: "10px 14px" }}>
+          <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+            background: m.grade === "Chef" ? "#7c1d1d" : m.grade === "Capo" ? "#1e3a5f" : m.grade === "Sous Capo" ? "#1a3a2a" : COLORS.blue,
+            color: m.grade === "Chef" ? "#fca5a5" : m.grade === "Capo" ? "#93c5fd" : m.grade === "Sous Capo" ? "#86efac" : COLORS.textMuted
+          }}>{m.grade || "Soldat"}</span>
+        </td>
+        <td style={{ padding: "10px 14px" }}>
+          <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
             </>, { marginBottom: 16 })}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Créer une semaine</h3>
