@@ -281,6 +281,9 @@ setStockCamera(sc || [])
 const totalVentes = activities.filter(a => a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
 const myPlantations = activities.filter(a => a.member_id === member?.id && a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
 const totalPlantations = activities.filter(a => a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
+const ACTION_TYPES = ["Atm", "Apu", "Cambu", "Go fast"]
+const myActions = activities.filter(a => a.member_id === member?.id && ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
+const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
@@ -292,7 +295,10 @@ const totalPlantations = activities.filter(a => a.type === "Plantation").reduce(
         <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de plantations</div>
         <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myPlantations} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalPlantations}</span></div>
       </div>
-      {statCard("Activités", myActivities.length)}
+      <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+  <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</div>
+  <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myActions} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalActions}</span></div>
+</div>
       {statCard("Salaire", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
       {statCard("Points", myScores?.points ?? 0, COLORS.gold)}
     </div>
