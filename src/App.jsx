@@ -276,13 +276,28 @@ setStockCamera(sc || [])
         {page === "dashboard" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
-  {statCard("Ventes", activities.filter(a => a.member_id === member?.id && a.type === "vente").length)}
-  {statCard("Plantations", activities.filter(a => a.member_id === member?.id && a.type === "Plantation").length)}
-  {statCard("Activités", myActivities.length)}
-  {statCard("Salaire", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
-  {statCard("Points", myScores?.points ?? 0, COLORS.gold)}
-</div>
+            {(() => {
+  const myVentes = activities.filter(a => a.member_id === member?.id && a.type === "vente").length
+  const totalVentes = activities.filter(a => a.type === "vente").length
+  const myPlantations = activities.filter(a => a.member_id === member?.id && a.type === "Plantation").length
+  const totalPlantations = activities.filter(a => a.type === "Plantation").length
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
+      <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+        <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de ventes</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myVentes} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalVentes}</span></div>
+      </div>
+      <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+        <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de plantations</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myPlantations} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalPlantations}</span></div>
+      </div>
+      {statCard("Activités", myActivities.length)}
+      {statCard("Salaire", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
+      {statCard("Points", myScores?.points ?? 0, COLORS.gold)}
+    </div>
+  )
+})()}
             {card(
               <>
                 <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dernières activités</h3>
