@@ -276,11 +276,13 @@ setStockCamera(sc || [])
         {page === "dashboard" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
-              {statCard("Points totaux", myScores?.points ?? 0, COLORS.gold)}
-              {statCard("Salaire semaine", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
-              {statCard("Activités semaine", myActivities.length)}
-            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
+  {statCard("Ventes", activities.filter(a => a.member_id === member?.id && a.type === "vente").length)}
+  {statCard("Plantations", activities.filter(a => a.member_id === member?.id && a.type === "Plantation").length)}
+  {statCard("Activités", myActivities.length)}
+  {statCard("Salaire", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
+  {statCard("Points", myScores?.points ?? 0, COLORS.gold)}
+</div>
             {card(
               <>
                 <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dernières activités</h3>
