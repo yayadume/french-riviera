@@ -350,40 +350,61 @@ setStocks(st || [])
           </div>
         )}
 
+       
         {/* HIERARCHIE */}
-        {page === "hierarchie" && (
-          <div style={{ textAlign: "center" }}>
-            <h2 style={{ color: COLORS.gold, marginBottom: "2rem" }}>Hiérarchie</h2>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: "1.5rem" }}>
-              {[{n:"DUME",r:"Chef"},{n:"JORDAN",r:"Capo"}].map(({n,r}) => (
-                <div key={n} style={{ background: `${COLORS.blue}88`, border: `2px solid ${COLORS.gold}`, borderRadius: 12, padding: "20px 32px", minWidth: 130 }}>
-                  <div style={{ fontSize: 32 }}>👑</div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: COLORS.gold, marginTop: 8 }}>{n}</div>
-                  <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>{r}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
-              <div style={{ background: `${COLORS.blue}44`, border: `2px solid ${COLORS.blueLight}`, borderRadius: 12, padding: "20px 32px", minWidth: 130 }}>
-                <div style={{ fontSize: 32 }}>🥈</div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: COLORS.text, marginTop: 8 }}>CIRO</div>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>Sous Capo</div>
-              </div>
-            </div>
-            <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />
-            <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.1em" }}>Soldats</div>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}>
-              {["PARKER","TONY","MARTINO","MAMADE","DON","KYKY","NEXYO","JON","JASON"].map(n => (
-                <div key={n} style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "14px 20px", minWidth: 100 }}>
-                  <div style={{ fontSize: 24 }}>⚔️</div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: COLORS.text, marginTop: 6 }}>{n}</div>
-                  <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Soldat</div>
+{page === "hierarchie" && (
+  <div style={{ textAlign: "center" }}>
+    <h2 style={{ color: COLORS.gold, marginBottom: "2rem" }}>Hiérarchie</h2>
+
+    {(() => {
+      const gradeOrder = ["Chef", "Capo", "Sous Capo", "Commandant", "Lieutenant", "Soldat d'élite", "Soldat"]
+      const gradeIcons = {
+        "Chef": "👑", "Capo": "👑", "Sous Capo": "🥈",
+        "Commandant": "⭐", "Lieutenant": "🎖️", "Soldat d'élite": "🗡️", "Soldat": "⚔️"
+      }
+      const gradeColors = {
+        "Chef": { bg: `${COLORS.blue}88`, border: COLORS.gold, text: COLORS.gold, sub: "#aaa" },
+        "Capo": { bg: `${COLORS.blue}88`, border: COLORS.gold, text: COLORS.gold, sub: "#aaa" },
+        "Sous Capo": { bg: `${COLORS.blue}44`, border: COLORS.blueLight, text: COLORS.text, sub: COLORS.textMuted },
+        "Commandant": { bg: `${COLORS.blue}33`, border: "#6b7fa3", text: COLORS.text, sub: COLORS.textMuted },
+        "Lieutenant": { bg: `${COLORS.blue}22`, border: "#444", text: COLORS.text, sub: COLORS.textMuted },
+        "Soldat d'élite": { bg: COLORS.card, border: "#444", text: COLORS.text, sub: COLORS.textMuted },
+        "Soldat": { bg: COLORS.card, border: COLORS.border, text: COLORS.text, sub: COLORS.textMuted }
+      }
+
+      const grouped = gradeOrder.reduce((acc, g) => {
+        const list = members.filter(m => (m.grade || "Soldat") === g)
+        if (list.length > 0) acc.push({ grade: g, members: list })
+        return acc
+      }, [])
+
+      return grouped.map(({ grade, members: gradeMembers }, gi) => {
+        const c = gradeColors[grade] || gradeColors["Soldat"]
+        const icon = gradeIcons[grade] || "⚔️"
+        const isTop = ["Chef", "Capo"].includes(grade)
+        const isSolo = gradeMembers.length === 1
+
+        return (
+          <div key={grade}>
+            {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
+              {gradeMembers.map(m => (
+                <div key={m.id} style={{
+                  background: c.bg, border: `2px solid ${c.border}`, borderRadius: 12,
+                  padding: isTop ? "20px 32px" : "14px 24px", minWidth: isTop ? 130 : 110
+                }}>
+                  <div style={{ fontSize: isTop ? 32 : 24 }}>{icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: isTop ? 16 : 14, color: c.text, marginTop: 8 }}>{m.name}</div>
+                  <div style={{ fontSize: 11, color: c.sub, marginTop: 4 }}>{grade}</div>
                 </div>
               ))}
             </div>
           </div>
-        )}
+        )
+      })
+    })()}
+  </div>
+)}
 
         {/* MEMBRES */}
         {page === "membres" && (
