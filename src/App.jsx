@@ -64,6 +64,7 @@ export default function App() {
   const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) })
   const [message, setMessage] = useState("")
   const [newMember, setNewMember] = useState("")
+  const [quotas, setQuotas] = useState({ actions: 24, plantations: 108, ventes: 600 })
 const [stocks, setStocks] = useState([])
 const [stockCamera, setStockCamera] = useState([])
 const [coffres, setCoffres] = useState([])
@@ -116,6 +117,8 @@ const { data: st } = await supabase.from("stock_actuel").select("*")
 setStocks(st || [])
 const { data: sc } = await supabase.from("stock_camera").select("*")
 setStockCamera(sc || [])
+const { data: q } = await supabase.from("quotas").select("*").single()
+if (q) setQuotas(q)
   }
 
   const handleLogin = async () => {
@@ -316,29 +319,97 @@ const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduc
     </div>
   )
 })()}
-            {card(
-              <>
-                <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dernières activités</h3>
-                {myActivities.length === 0
-                  ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucune activité cette semaine.</p>
-                  : myActivities.map(a => (
-                    <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, fontSize: 14 }}>
-  <span style={{ color: COLORS.gold }}>{a.type}</span>
-  {a.drogue && <span style={{ color: COLORS.textMuted }}>{a.drogue}</span>}
-  <span>×{a.quantity}</span>
-  <span style={{ color: COLORS.textMuted, fontSize: 12 }}>
-    {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-  </span>
-  <button onClick={async () => {
-    if (!confirm("Supprimer cette activité ?")) return
-    await supabase.from("activities").delete().eq("id", a.id)
-    loadData()
-  }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+
+  {/* DISPONIBILITES */}
+  {card(<>
+    <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>Disponibilités actions</h3>
+    {(() => {
+      const actionTypes = [
+        { type: "Atm", label: "ATM", cooldown: 3 },
+        { type: "Apu", label: "APU", cooldown: 2 },
+        { type: "Cambu", label: "CAMBU", cooldown: 3 },
+        { type: "Go fast", label: "GO FAST", cooldown: 24 }
+      ]
+      return actionTypes.map(({ type, label, cooldown }) => {
+        const last = activities
+          .filter(a => a.member_id === member?.id && a.type === type)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+        const now = new Date()
+        const lastDate = last ? new Date(last.created_at) : null
+        const diffH = lastDate ? (now - lastDate) / 3600000 : null
+        const available = !lastDate || diffH >= cooldown
+        const remaining = lastDate && !available ? cooldown - diffH : 0
+        const remainH = Math.floor(remaining)
+        const remainM = Math.floor((remaining - remainH) * 60)
+
+        return (
+          <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>
+              <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                {lastDate ? `Dernière : ${lastDate.toLocaleDateString('fr-FR')} ${lastDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : "Jamais effectué"}
+              </div>
+            </div>
+            {available
+              ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
+              : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {remainH}h {remainM}m</span>
+            }
+          </div>
+        )
+      })
+    })()}
+  </>)}
+
+  {/* QUOTAS */}
+  {card(<>
+    <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>Quotas de la semaine</h3>
+    {(() => {
+      const items = [
+        { label: "Actions effectuées", value: myActions, total: quotas.actions, color: COLORS.gold },
+        { label: "Plantations", value: myPlantations, total: quotas.plantations, color: "#4ade80" },
+        { label: "Ventes", value: myVentes, total: quotas.ventes, color: "#60a5fa" }
+      ]
+      return items.map(({ label, value, total, color }) => {
+        const pct = Math.min(Math.round((value / total) * 100), 100)
+        return (
+          <div key={label} style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
+              <span style={{ color: COLORS.textMuted }}>{label}</span>
+              <span style={{ color, fontWeight: 600 }}>{value} / {total}</span>
+            </div>
+            <div style={{ background: "#0a1628", borderRadius: 6, height: 8, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 6, transition: "width 0.5s ease" }} />
+            </div>
+          </div>
+        )
+      })
+    })()}
+  </>)}
+
 </div>
-                  ))
-                }
-              </>
-            )}
+
+{card(<>
+  <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dernières activités</h3>
+  {myActivities.length === 0
+    ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucune activité cette semaine.</p>
+    : myActivities.map(a => (
+      <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, fontSize: 14 }}>
+        <span style={{ color: COLORS.gold }}>{a.type}</span>
+        {a.drogue && <span style={{ color: COLORS.textMuted }}>{a.drogue}</span>}
+        <span>×{a.quantity}</span>
+        <span style={{ color: COLORS.textMuted, fontSize: 12 }}>
+          {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+        <button onClick={async () => {
+          if (!confirm("Supprimer cette activité ?")) return
+          await supabase.from("activities").delete().eq("id", a.id)
+          loadData()
+        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
+      </div>
+    ))
+  }
+</>)}
           </div>
         )}
 
@@ -579,6 +650,28 @@ const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduc
   </tbody>
 </table>
             </>, { marginBottom: 16 })}
+            {card(<>
+  <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Quotas de la semaine</h3>
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
+    {[
+      { key: "actions", label: "Actions" },
+      { key: "plantations", label: "Plantations" },
+      { key: "ventes", label: "Ventes" }
+    ].map(({ key, label }) => (
+      <div key={key}>
+        <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
+        <input type="number" value={quotas[key]} onChange={e => setQuotas({ ...quotas, [key]: parseInt(e.target.value) })}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box" }} />
+      </div>
+    ))}
+  </div>
+  {goldBtn("Sauvegarder les quotas", async () => {
+    await supabase.from("quotas").update({ actions: quotas.actions, plantations: quotas.plantations, ventes: quotas.ventes }).eq("id", 1)
+    setMessage("✅ Quotas mis à jour !")
+    setTimeout(() => setMessage(""), 3000)
+  })}
+  {message && <p style={{ color: COLORS.success, marginTop: 10, fontSize: 13 }}>{message}</p>}
+</>, { marginBottom: 16 })}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Créer une semaine</h3>
               <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Les semaines vont du dimanche 19h au dimanche 19h suivant.</p>
