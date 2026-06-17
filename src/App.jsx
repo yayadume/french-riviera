@@ -607,30 +607,22 @@ setStockCamera(sc || [])
             <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 {nom}</h3>
             {items.length === 0
               ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
-              : <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                  <thead>
-                    <tr style={{ background: COLORS.blue }}>
-                      <th style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold }}>Item</th>
-                      <th style={{ padding: "10px 14px", textAlign: "center", color: COLORS.gold }}>Quantité</th>
-                    </tr>
-                  </thead>
-                <tbody>
-  {items.map((s, i) => (
-    <tr key={s.item} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-      <td style={{ padding: "10px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {ITEM_IMAGES[s.item.toUpperCase()]
-            ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 6, background: "#0a1628", padding: 4 }} />
-            : <div style={{ width: 40, height: 40, borderRadius: 6, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📦</div>
-          }
-          <span>{s.item}</span>
-        </div>
-      </td>
-      <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{s.quantite}</td>
-    </tr>
+              : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+  {items.map(s => (
+    <div key={s.item} style={{
+      background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+      borderRadius: 12, padding: "16px 12px", width: 130,
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 10
+    }}>
+      <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
+      {ITEM_IMAGES[s.item?.toUpperCase()]
+        ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
+        : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
+      }
+      <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
+    </div>
   ))}
-</tbody>
-                </table>
+</div>
             }
           </>)}
         </div>
