@@ -60,7 +60,7 @@ export default function App() {
   const [drogues, setDrogues] = useState([])
   const [loginForm, setLoginForm] = useState({ email: "", password: "" })
   const [loginError, setLoginError] = useState("")
-  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date().toISOString().slice(0,16) })
+  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) })
   const [message, setMessage] = useState("")
   const [newMember, setNewMember] = useState("")
 const [stocks, setStocks] = useState([])
