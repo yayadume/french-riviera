@@ -306,7 +306,13 @@ const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduc
     <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {Math.round(salaires.reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)).toLocaleString()} $</span>
   </div>
 </div>
-      {statCard("Points", myScores?.points ?? 0, COLORS.gold)}
+      <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+  <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Points</div>
+  <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>
+    {myScores?.points ?? 0}
+    <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)}</span>
+  </div>
+</div>
     </div>
   )
 })()}
