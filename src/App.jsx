@@ -500,7 +500,7 @@ setStocks(st || [])
         <td style={{ padding: "10px 14px" }}>
   <select value={m.grade || "Soldat"} onChange={e => handleChangeGrade(m.id, e.target.value)}
     style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: 12, cursor: "pointer" }}>
-    {["Soldat","Sous Capo","Capo","Chef"].map(g => <option key={g} value={g}>{g}</option>)}
+    {["Soldat","Soldat d'élite","Lieutenant","Commandant","Sous Capo","Capo","Chef"].map(g => <option key={g} value={g}>{g}</option>)}
   </select>
 </td>
         <td style={{ padding: "10px 14px" }}>
