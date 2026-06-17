@@ -277,10 +277,10 @@ setStockCamera(sc || [])
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
             {(() => {
-  const myVentes = activities.filter(a => a.member_id === member?.id && a.type === "vente").length
-  const totalVentes = activities.filter(a => a.type === "vente").length
-  const myPlantations = activities.filter(a => a.member_id === member?.id && a.type === "Plantation").length
-  const totalPlantations = activities.filter(a => a.type === "Plantation").length
+ const myVentes = activities.filter(a => a.member_id === member?.id && a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
+const totalVentes = activities.filter(a => a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
+const myPlantations = activities.filter(a => a.member_id === member?.id && a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
+const totalPlantations = activities.filter(a => a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
