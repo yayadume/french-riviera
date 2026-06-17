@@ -600,7 +600,11 @@ setStockCamera(sc || [])
 
     {/* Affichage stock par coffre */}
     {["Coffre 29", "Coffre 52"].map(nom => {
-      const items = stocks.filter(s => s.coffre === nom)
+  const isCam29 = nom === "Coffre 29"
+  const items = isCam29
+    ? stockCamera.filter(s => s.coffre === "Caméra 29")
+    : stocks.filter(s => s.coffre === nom)
+
       return (
         <div key={nom} style={{ marginBottom: 20 }}>
           {card(<>
