@@ -123,6 +123,10 @@ setStocks(st || [])
     await supabase.from("members").delete().eq("id", id)
     loadData()
   }
+  const handleChangeGrade = async (id, grade) => {
+  await supabase.from("members").update({ grade }).eq("id", id)
+  loadData()
+}
   const handleAddStock = async () => {
   if (!stockForm.coffre_id || !stockForm.item || !stockForm.quantite) return setMessage("❌ Remplis tous les champs")
   const { error } = await supabase.from("stock_items").insert([{
@@ -473,11 +477,11 @@ setStocks(st || [])
         <td style={{ padding: "10px 14px", color: COLORS.textMuted }}>{m.email || "—"}</td>
         <td style={{ padding: "10px 14px", color: COLORS.textMuted, fontSize: 11, fontFamily: "monospace" }}>{m.user_id || "—"}</td>
         <td style={{ padding: "10px 14px" }}>
-          <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-            background: m.grade === "Chef" ? "#7c1d1d" : m.grade === "Capo" ? "#1e3a5f" : m.grade === "Sous Capo" ? "#1a3a2a" : COLORS.blue,
-            color: m.grade === "Chef" ? "#fca5a5" : m.grade === "Capo" ? "#93c5fd" : m.grade === "Sous Capo" ? "#86efac" : COLORS.textMuted
-          }}>{m.grade || "Soldat"}</span>
-        </td>
+  <select value={m.grade || "Soldat"} onChange={e => handleChangeGrade(m.id, e.target.value)}
+    style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: 12, cursor: "pointer" }}>
+    {["Soldat","Sous Capo","Capo","Chef"].map(g => <option key={g} value={g}>{g}</option>)}
+  </select>
+</td>
         <td style={{ padding: "10px 14px" }}>
           <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
         </td>
