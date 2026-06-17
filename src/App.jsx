@@ -299,7 +299,13 @@ const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduc
   <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</div>
   <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myActions} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalActions}</span></div>
 </div>
-      {statCard("Salaire", `${Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $`, COLORS.success)}
+      <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+  <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Salaire</div>
+  <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.success }}>
+    {Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $
+    <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {Math.round(salaires.reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)).toLocaleString()} $</span>
+  </div>
+</div>
       {statCard("Points", myScores?.points ?? 0, COLORS.gold)}
     </div>
   )
