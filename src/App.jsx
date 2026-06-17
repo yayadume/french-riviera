@@ -635,43 +635,8 @@ setStockCamera(sc || [])
   </div>
 )}
       </div>
-      {/* STOCK CAMERAS */}
-{stockCamera.length > 0 && (
-  <div style={{ marginTop: 20 }}>
-    <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 16 }}>📹 Stock par caméra</h3>
-    {[...new Set(stockCamera.map(s => s.coffre))].map(coffre => (
-      <div key={coffre} style={{ marginBottom: 16 }}>
-        {card(<>
-          <h4 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 13, textTransform: "uppercase" }}>📦 {coffre}</h4>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: COLORS.blue }}>
-                <th style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold }}>Item</th>
-                <th style={{ padding: "10px 14px", textAlign: "center", color: COLORS.gold }}>Quantité</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stockCamera.filter(s => s.coffre === coffre).map((s, i) => (
-                <tr key={s.item} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-                  <td style={{ padding: "10px 14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      {ITEM_IMAGES[s.item?.toUpperCase()]
-                        ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 6, background: "#0a1628", padding: 4 }} />
-                        : <div style={{ width: 40, height: 40, borderRadius: 6, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📦</div>
-                      }
-                      <span>{s.item}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{s.quantite}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>)}
-      </div>
-    ))}
-  </div>
-)}
+      
+
     </div>
   )
 }
