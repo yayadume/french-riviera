@@ -74,10 +74,19 @@ const [stockForm, setStockForm] = useState({ coffre_id: "", item: "", quantite: 
   }, [])
 
   useEffect(() => {
-    if (!session) return
-    supabase.from("members").select("*").eq("user_id", session.user.id).single().then(({ data }) => setMember(data))
-    loadData()
-  }, [session])
+  if (!session) return
+  supabase.from("members").select("*").eq("user_id", session.user.id).single().then(({ data }) => setMember(data))
+  loadData()
+
+  const channel = supabase
+    .channel("stock-realtime")
+    .on("postgres_changes", { event: "*", schema: "public", table: "stock_items" }, () => {
+      loadData()
+    })
+    .subscribe()
+
+  return () => supabase.removeChannel(channel)
+}, [session])
 
   useEffect(() => {
     if (!semaine) return
