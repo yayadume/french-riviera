@@ -19,7 +19,7 @@ const COLORS = {
 const ITEM_IMAGES = {
   "METH": "/meth.png",
   "TRANQ": "/tranq.png",
-  "MEXICANA": "/mexicana.png",
+  "POCHON DE MEXICANA": "/mexicana.png",
   "CRACK": "/crack.png",
   "CARTE PP": "/carte-pp.png",
   "BRANCHE": "/branche.png"
