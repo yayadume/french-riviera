@@ -30,7 +30,23 @@ const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca
 const MEDALS = ["🥇","🥈","🥉"]
 
 const s = (obj) => Object.assign({}, obj)
-
+function Clock() {
+  const [time, setTime] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>
+        {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      </div>
+      <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+        {time.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' })}
+      </div>
+    </div>
+  )
+}
 export default function App() {
   const [session, setSession] = useState(null)
   const [member, setMember] = useState(null)
@@ -203,8 +219,9 @@ setStocks(st || [])
       <div style={{ width: 220, background: COLORS.sidebar, borderRight: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", position: "fixed", height: "100vh", zIndex: 10 }}>
         <div style={{ padding: "1.5rem 1rem", borderBottom: `1px solid ${COLORS.border}`, textAlign: "center" }}>
           <img src="/frenchriviera.png" alt="FR" style={{ height: 70, objectFit: "contain" }} />
-          <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
-          {isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
+         <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
+{isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
+<Clock />
         </div>
 
         <nav style={{ flex: 1, padding: "1rem 0" }}>
