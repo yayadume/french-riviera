@@ -504,12 +504,10 @@ export default function App() {
     ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 180 : 120, objectFit: "cover", objectPosition: "top" }} />
     : <div style={{ width: "100%", height: isTop ? 180 : 120, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 48 : 32 }}>{icon}</div>
   }
-{!MEMBER_PHOTOS[m.name] && (
-  <div style={{ padding: "10px 14px", textAlign: "center" }}>
-    <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: c.text }}>{m.name}</div>
-    <div style={{ fontSize: 11, color: c.sub, marginTop: 3 }}>{grade}</div>
-  </div>
-)}
+<div style={{ padding: "10px 14px", textAlign: "center" }}>
+  {!MEMBER_PHOTOS[m.name] && <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: c.text }}>{m.name}</div>}
+  <div style={{ fontSize: 11, color: c.sub, marginTop: 3 }}>{MEMBER_PHOTOS[m.name] ? "" : grade}</div>
+</div>
                       ))}
                     </div>
                   </div>
