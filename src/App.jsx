@@ -26,7 +26,9 @@ const ITEM_IMAGES = {
   "CARTE PP": "/carte-pp.png",
   "BRANCHE": "/branche.png"
 }
-
+const MEMBER_PHOTOS = {
+  "DUME": "/dume.png"
+}
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
 const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison"]
 const MEDALS = ["🥇","🥈","🥉"]
@@ -497,11 +499,16 @@ export default function App() {
                     {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
                     <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
                       {gradeMembers.map(m => (
-                        <div key={m.id} style={{ background: c.bg, border: `2px solid ${c.border}`, borderRadius: 12, padding: isTop ? "20px 32px" : "14px 24px", minWidth: isTop ? 130 : 110 }}>
-                          <div style={{ fontSize: isTop ? 32 : 24 }}>{icon}</div>
-                          <div style={{ fontWeight: 700, fontSize: isTop ? 16 : 14, color: c.text, marginTop: 8 }}>{m.name}</div>
-                          <div style={{ fontSize: 11, color: c.sub, marginTop: 4 }}>{grade}</div>
-                        </div>
+                        <div key={m.id} style={{ background: c.bg, border: `2px solid ${c.border}`, borderRadius: 12, overflow: "hidden", minWidth: isTop ? 160 : 120 }}>
+  {MEMBER_PHOTOS[m.name]
+    ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 180 : 120, objectFit: "cover", objectPosition: "top" }} />
+    : <div style={{ width: "100%", height: isTop ? 180 : 120, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 48 : 32 }}>{icon}</div>
+  }
+  <div style={{ padding: "10px 14px", textAlign: "center" }}>
+    <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: c.text }}>{m.name}</div>
+    <div style={{ fontSize: 11, color: c.sub, marginTop: 3 }}>{grade}</div>
+  </div>
+</div>
                       ))}
                     </div>
                   </div>
