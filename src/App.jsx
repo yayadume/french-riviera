@@ -27,8 +27,15 @@ const ITEM_IMAGES = {
   "BRANCHE": "/branche.png"
 }
 const MEMBER_PHOTOS = {
-  "DUME": "/dume.png"
+  "DUME": "/dume.png",
+  "JORDAN": "/jordan.png",
+  "CIRO": "/ciro.png",
+  "TONY": "/tony.png",
+  "PARKER": "/parker.png",
+  "MARTINO": "/martino.png",
+  "MAMADE": "/mamade.png"
 }
+
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
 const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison"]
 const MEDALS = ["🥇","🥈","🥉"]
@@ -498,16 +505,19 @@ export default function App() {
                   <div key={grade}>
                     {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
                     <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
-                      {gradeMembers.map(m => (
+                    {gradeMembers.map(m => (
                         <div key={m.id} style={{ background: c.bg, border: `2px solid ${c.border}`, borderRadius: 12, overflow: "hidden", minWidth: isTop ? 160 : 120 }}>
-  {MEMBER_PHOTOS[m.name]
-    ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 180 : 120, objectFit: "cover", objectPosition: "top" }} />
-    : <div style={{ width: "100%", height: isTop ? 180 : 120, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 48 : 32 }}>{icon}</div>
-  }
-<div style={{ padding: "10px 14px", textAlign: "center" }}>
-  {!MEMBER_PHOTOS[m.name] && <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: c.text }}>{m.name}</div>}
-  <div style={{ fontSize: 11, color: c.sub, marginTop: 3 }}>{MEMBER_PHOTOS[m.name] ? "" : grade}</div>
-</div>
+                          {MEMBER_PHOTOS[m.name]
+                            ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 180 : 120, objectFit: "cover", objectPosition: "top" }} />
+                            : <div style={{ width: "100%", height: isTop ? 180 : 120, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 48 : 32 }}>{icon}</div>
+                          }
+                          {!MEMBER_PHOTOS[m.name] && (
+                            <div style={{ padding: "10px 14px", textAlign: "center" }}>
+                              <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: c.text }}>{m.name}</div>
+                              <div style={{ fontSize: 11, color: c.sub, marginTop: 3 }}>{grade}</div>
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
