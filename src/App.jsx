@@ -258,11 +258,14 @@ export default function App() {
       {/* SIDEBAR */}
       <div style={{ width: 220, background: COLORS.sidebar, borderRight: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", position: "fixed", height: "100vh", zIndex: 10 }}>
         <div style={{ padding: "1.5rem 1rem", borderBottom: `1px solid ${COLORS.border}`, textAlign: "center" }}>
-          <img src="/frenchriviera.png" alt="FR" style={{ height: 70, objectFit: "contain" }} />
-          <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
-          {isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
-          <Clock />
-        </div>
+  {MEMBER_PHOTOS[member?.name]
+    ? <img src={MEMBER_PHOTOS[member?.name]} alt={member?.name} style={{ width: 90, height: 90, objectFit: "cover", objectPosition: "center top", borderRadius: "50%", border: `2px solid ${COLORS.gold}` }} />
+    : <div style={{ width: 90, height: 90, borderRadius: "50%", background: COLORS.blue, border: `2px solid ${COLORS.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto" }}>👤</div>
+  }
+  <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
+  {isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
+  <Clock />
+</div>
         <nav style={{ flex: 1, padding: "1rem 0" }}>
           {[
             { id: "dashboard", icon: "🏠", label: "Tableau de bord" },
@@ -285,10 +288,13 @@ export default function App() {
           ))}
         </nav>
         <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
-          <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
-            Déconnexion
-          </button>
-        </div>
+  <div style={{ textAlign: "center", marginBottom: 10 }}>
+    <img src="/frenchriviera.png" alt="FR" style={{ height: 50, objectFit: "contain" }} />
+  </div>
+  <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
+    Déconnexion
+  </button>
+</div>
       </div>
 
       {/* CONTENU */}
@@ -506,18 +512,20 @@ export default function App() {
                     {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
                     <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
                     {gradeMembers.map(m => (
-                        <div key={m.id} style={{ background: c.bg, border: `2px solid ${c.border}`, borderRadius: 12, overflow: "hidden", minWidth: isTop ? 160 : 120 }}>
-                          {MEMBER_PHOTOS[m.name]
-                            ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 180 : 120, objectFit: "cover", objectPosition: "top" }} />
-                            : <div style={{ width: "100%", height: isTop ? 180 : 120, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 48 : 32 }}>{icon}</div>
-                          }
-                          {!MEMBER_PHOTOS[m.name] && (
-                            <div style={{ padding: "10px 14px", textAlign: "center" }}>
-                              <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: c.text }}>{m.name}</div>
-                              <div style={{ fontSize: 11, color: c.sub, marginTop: 3 }}>{grade}</div>
-                            </div>
-                          )}
-                        </div>
+                        <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid ${c.border}`, minWidth: isTop ? 180 : 140, width: isTop ? 180 : 140 }}>
+  {MEMBER_PHOTOS[m.name]
+    ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 240 : 180, objectFit: "cover", objectPosition: "center top", display: "block" }} />
+    : <div style={{ width: "100%", height: isTop ? 240 : 180, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 56 : 40 }}>{icon}</div>
+  }
+  <div style={{
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    background: "linear-gradient(transparent, rgba(0,0,0,0.85))",
+    padding: "30px 10px 10px", textAlign: "center"
+  }}>
+    <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: "#fff", textShadow: "0 1px 4px #000" }}>{m.name}</div>
+    <div style={{ fontSize: 11, color: c.border === COLORS.gold ? COLORS.gold : "#aaa", marginTop: 3, fontWeight: 600 }}>{grade}</div>
+  </div>
+</div>
                       ))}
                     </div>
                   </div>
