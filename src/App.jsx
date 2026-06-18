@@ -572,66 +572,36 @@ export default function App() {
         )}
 
         {/* STOCK */}
-        {page === "stock" && (
-          <div>
-            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
-            {isAdmin && card(<>
-              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter / Retirer du stock</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Coffre</label>
-                  {select(stockForm.coffre_id, v => setStockForm({...stockForm, coffre_id: v}),
-                    [<option key="" value="">-- Choisir --</option>, ...coffres.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)]
-                  )}
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Action</label>
-                  {select(stockForm.action, v => setStockForm({...stockForm, action: v}), [
-                    <option key="depose" value="depose">Déposer</option>,
-                    <option key="retire" value="retire">Retirer</option>
-                  ])}
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Item</label>
-                  {input(stockForm.item, v => setStockForm({...stockForm, item: v}), "text", "Ex: COKE, AK47...")}
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
-                  {input(stockForm.quantite, v => setStockForm({...stockForm, quantite: v}), "number")}
-                </div>
-              </div>
-              {goldBtn("Valider", handleAddStock, { width: "100%" })}
-              {message && <p style={{ textAlign: "center", marginTop: 12, color: message.includes("✅") ? COLORS.success : COLORS.danger }}>{message}</p>}
-            </>, { marginBottom: 20 })}
-
-            {["Coffre 29", "Coffre 52"].map(nom => {
-              const isCam29 = nom === "Coffre 29"
-              const items = isCam29 ? stockCamera.filter(s => s.coffre === "Caméra 29") : stocks.filter(s => s.coffre === nom)
-              return (
-                <div key={nom} style={{ marginBottom: 20 }}>
-                  {card(<>
-                    <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 {nom}</h3>
-                    {items.length === 0
-                      ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
-                      : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                        {items.map(s => (
-                          <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
-                            {ITEM_IMAGES[s.item?.toUpperCase()]
-                              ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
-                              : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
-                            }
-                            <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
-                          </div>
-                        ))}
-                      </div>
+{page === "stock" && (
+  <div>
+    <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
+    {(() => {
+      const items = stockCamera.filter(s => s.coffre === "Caméra 29")
+      return (
+        <div>
+          {card(<>
+            <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre 29</h3>
+            {items.length === 0
+              ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
+              : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                {items.map(s => (
+                  <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
+                    {ITEM_IMAGES[s.item?.toUpperCase()]
+                      ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
+                      : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
                     }
-                  </>)}
-                </div>
-              )
-            })}
-          </div>
-        )}
+                    <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
+                  </div>
+                ))}
+              </div>
+            }
+          </>)}
+        </div>
+      )
+    })()}
+  </div>
+)}
 
         {/* ADMIN */}
         {page === "admin" && isAdmin && (
