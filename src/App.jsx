@@ -654,7 +654,7 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: COLORS.blue }}>
-                    {["Membre","Email","UID","Grade","Action"].map(h => (
+                    {["Membre","Email","UID","Grade","Mot de passe","Action"].map(h => (
                       <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -672,8 +672,21 @@ export default function App() {
                         </select>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
-                        <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
-                      </td>
+  <button onClick={async () => {
+    if (!m.user_id) return alert("Ce membre n'a pas de compte auth.")
+    const newPwd = prompt(`Nouveau mot de passe pour ${m.name} :`)
+    if (!newPwd) return
+    if (newPwd.length < 6) return alert("❌ Minimum 6 caractères.")
+    const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
+      body: JSON.stringify({ user_id: m.user_id, password: newPwd })
+    })
+    if (res.ok) alert(`✅ Mot de passe de ${m.name} mis à jour !`)
+    else alert("❌ Erreur lors du changement.")
+  }} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.blueLight, color: "#fff", cursor: "pointer", fontSize: 12, marginRight: 6 }}>🔑 MDP</button>
+  <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
+</td>
                     </tr>
                   ))}
                 </tbody>
