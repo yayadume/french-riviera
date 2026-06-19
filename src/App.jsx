@@ -166,7 +166,7 @@ const handleAddMember = async () => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+      "Authorization": `Bearer ${session?.access_token}`
     },
     body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
   })
@@ -190,9 +190,7 @@ const handleAddMember = async () => {
 }
 
   // Créer le compte auth via Edge Function
- const { data: sessionData } = await supabase.auth.getSession()
-const token = sessionData.session?.access_token
-console.log("Token:", token ? "OK" : "MANQUANT")
+ const token = session?.access_token
 
 const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
   method: "POST",
