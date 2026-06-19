@@ -80,6 +80,9 @@ export default function App() {
   const [stockCamera, setStockCamera] = useState([])
   const [coffres, setCoffres] = useState([])
   const [stockForm, setStockForm] = useState({ coffre_id: "", item: "", quantite: 1, action: "depose" })
+  const [newMemberEmail, setNewMemberEmail] = useState("")
+const [newMemberPassword, setNewMemberPassword] = useState("")
+const [showAddForm, setShowAddForm] = useState(false)
 
   const isAdmin = member?.name === "DUME"
 
@@ -153,11 +156,36 @@ export default function App() {
   }
 
  const handleAddMember = async () => {
-  if (!newMember.trim()) return
-  const email = prompt(`Email pour ${newMember.toUpperCase()} :`)
-  if (!email) return
-  const password = prompt(`Mot de passe pour ${newMember.toUpperCase()} (6 caractères min) :`)
-  if (!password || password.length < 6) return alert("❌ Mot de passe trop court.")
+  if (!newMember.trim()) return setMessage("❌ Nom requis")
+  if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
+  if (!newMemberPassword || newMemberPassword.length < 6) return setMessage("❌ Mot de passe trop court")
+
+  const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+    },
+    body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
+  })
+
+  const resData = await res.json()
+  if (!res.ok) return setMessage("❌ Erreur : " + (resData.error || "Erreur inconnue"))
+
+  await supabase.from("members").insert([{
+    name: newMember.toUpperCase(),
+    active: true,
+    email: newMemberEmail,
+    user_id: resData.user_id,
+    grade: "Soldat"
+  }])
+
+  setNewMember("")
+  setNewMemberEmail("")
+  setNewMemberPassword("")
+  setMessage(`✅ Membre ${newMember.toUpperCase()} créé !`)
+  loadData()
+}
 
   // Créer le compte auth via Edge Function
   const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
@@ -169,8 +197,11 @@ export default function App() {
     body: JSON.stringify({ email, password, create: true })
   })
 
-  if (!res.ok) return alert("❌ Erreur lors de la création du compte.")
-  const { user_id } = await res.json()
+  const resData = await res.json()
+console.log("Réponse Edge Function:", resData, "Status:", res.status)
+if (!res.ok) return alert("❌ Erreur : " + (resData.error || "Erreur inconnue"))
+const user_id = resData.user_id
+console.log("user_id récupéré:", user_id)
 
   // Insérer le membre avec l'UID et l'email
   await supabase.from("members").insert([{
@@ -668,13 +699,25 @@ export default function App() {
         {page === "admin" && isAdmin && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
-            {card(<>
-              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
-              <div style={{ display: "flex", gap: 10 }}>
-                {input(newMember, setNewMember, "text", "Nom du membre")}
-                {goldBtn("Ajouter", handleAddMember)}
-              </div>
-            </>, { marginBottom: 16 })}
+           {card(<>
+  <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+    <div>
+      <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Nom</label>
+      {input(newMember, setNewMember, "text", "Nom du membre")}
+    </div>
+    <div>
+      <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
+      {input(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
+    </div>
+    <div>
+      <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
+      {input(newMemberPassword, setNewMemberPassword, "password", "Min 6 caractères")}
+    </div>
+    {goldBtn("Ajouter", handleAddMember)}
+  </div>
+  {message && <p style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, marginTop: 10, fontSize: 13 }}>{message}</p>}
+</>, { marginBottom: 16 })}
 
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Gérer les membres</h3>
