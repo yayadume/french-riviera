@@ -288,8 +288,8 @@ export default function App() {
           ))}
         </nav>
         <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
-  <div style={{ textAlign: "center", marginBottom: 10 }}>
-    <img src="/frenchriviera.png" alt="FR" style={{ height: 50, objectFit: "contain" }} />
+  <div style={{ textAlign: "center", marginBottom: 10, padding: "1rem 0" }}>
+    <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
   </div>
   <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
     Déconnexion
