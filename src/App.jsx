@@ -2,45 +2,26 @@ import { useEffect, useState } from "react"
 import { supabase } from "./supabase"
 
 const COLORS = {
-  bg: "#050d1a",
-  sidebar: "#080f1f",
-  card: "#0d1b2e",
-  border: "#1a2d4a",
-  gold: "#c9a84c",
-  goldLight: "#e8c97a",
-  blue: "#1a3a6b",
-  blueLight: "#2a5298",
-  text: "#e8eaf0",
-  textMuted: "#6b7fa3",
-  success: "#4ade80",
-  danger: "#f87171",
-  warning: "#fbbf24"
+  bg: "#050d1a", sidebar: "#080f1f", card: "#0d1b2e", border: "#1a2d4a",
+  gold: "#c9a84c", goldLight: "#e8c97a", blue: "#1a3a6b", blueLight: "#2a5298",
+  text: "#e8eaf0", textMuted: "#6b7fa3", success: "#4ade80", danger: "#f87171", warning: "#fbbf24"
 }
 
 const ITEM_IMAGES = {
-  "METH": "/meth.png",
-  "TRANQ": "/tranq.png",
-  "POCHON DE MEXICANA": "/mexicana.png",
-  "CANNABIS": "/Cannabis.png",
-  "CRACK": "/crack.png",
-  "CARTE PP": "/carte-pp.png",
-  "BRANCHE": "/branche.png"
+  "METH": "/meth.png", "TRANQ": "/tranq.png", "POCHON DE MEXICANA": "/mexicana.png",
+  "CANNABIS": "/Cannabis.png", "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png"
 }
 
 const MEMBER_PHOTOS = {
-  "DUME": "/dume.png",
-  "JORDAN": "/jordan.png",
-  "CIRO": "/ciro.png",
-  "TONY": "/tony.png",
-  "PARKER": "/parker.png",
-  "MARTINO": "/martino.png",
-  "MAMADE": "/mamade.png"
+  "DUME": "/dume.png", "JORDAN": "/jordan.png", "CIRO": "/ciro.png",
+  "TONY": "/tony.png", "PARKER": "/parker.png", "MARTINO": "/martino.png", "MAMADE": "/mamade.png"
 }
 
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
 const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison"]
 const MEDALS = ["🥇","🥈","🥉"]
 const ACTION_TYPES = ["Atm","Apu","Cambu","Go fast"]
+const EDGE_URL = "https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password"
 
 function Clock() {
   const [time, setTime] = useState(new Date())
@@ -50,7 +31,7 @@ function Clock() {
   }, [])
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>
         {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </div>
       <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
@@ -70,7 +51,6 @@ export default function App() {
   const [scores, setScores] = useState([])
   const [salaires, setSalaires] = useState([])
   const [activities, setActivities] = useState([])
-  const [drogues, setDrogues] = useState([])
   const [loginForm, setLoginForm] = useState({ email: "", password: "" })
   const [loginError, setLoginError] = useState("")
   const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) })
@@ -79,10 +59,8 @@ export default function App() {
   const [newMemberEmail, setNewMemberEmail] = useState("")
   const [newMemberPassword, setNewMemberPassword] = useState("")
   const [quotas, setQuotas] = useState({ actions: 24, plantations: 108, ventes: 600 })
-  const [stocks, setStocks] = useState([])
   const [stockCamera, setStockCamera] = useState([])
   const [coffres, setCoffres] = useState([])
-  const [stockForm, setStockForm] = useState({ coffre_id: "", item: "", quantite: 1, action: "depose" })
 
   const isAdmin = member?.name === "DUME"
 
@@ -95,10 +73,8 @@ export default function App() {
     if (!session) return
     supabase.from("members").select("*").eq("user_id", session.user.id).single().then(({ data }) => setMember(data))
     loadData()
-    const channel = supabase
-      .channel("stock-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "stock_items" }, () => { loadData() })
-      .on("postgres_changes", { event: "*", schema: "public", table: "camera_events" }, () => { loadData() })
+    const channel = supabase.channel("realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "camera_events" }, () => loadData())
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [session])
@@ -118,12 +94,8 @@ export default function App() {
     setForm(f => ({ ...f, semaine_id: active?.id || "" }))
     const { data: m } = await supabase.from("members").select("*").order("name")
     setMembers(m || [])
-    const { data: d } = await supabase.from("drogues").select("*").order("nom")
-    setDrogues(d || [])
     const { data: c } = await supabase.from("coffres").select("*").order("nom")
     setCoffres(c || [])
-    const { data: st } = await supabase.from("stock_actuel").select("*")
-    setStocks(st || [])
     const { data: sc } = await supabase.from("stock_camera").select("*")
     setStockCamera(sc || [])
     const { data: q } = await supabase.from("quotas").select("*").single()
@@ -140,53 +112,36 @@ export default function App() {
     const targetId = isAdmin ? parseInt(form.member_id) : member?.id
     if (!targetId) return setMessage("❌ Sélectionne un membre")
     const { error } = await supabase.from("activities").insert([{
-      member_id: targetId,
-      semaine_id: parseInt(form.semaine_id),
-      type: form.type,
+      member_id: targetId, semaine_id: parseInt(form.semaine_id), type: form.type,
       drogue: form.type === "vente" ? form.drogue : null,
-      quantity: parseInt(form.quantity),
-      created_at: new Date(form.date_heure).toISOString()
+      quantity: parseInt(form.quantity), created_at: new Date(form.date_heure).toISOString()
     }])
     if (error) setMessage("❌ Erreur : " + error.message)
-    else {
-      setMessage("✅ Activité ajoutée !")
-      loadData()
-      setTimeout(() => setMessage(""), 3000)
-    }
+    else { setMessage("✅ Activité ajoutée !"); loadData(); setTimeout(() => setMessage(""), 3000) }
   }
 
   const handleAddMember = async () => {
     if (!newMember.trim()) return setMessage("❌ Nom requis")
     if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
     if (!newMemberPassword || newMemberPassword.length < 6) return setMessage("❌ Mot de passe trop court")
-
-    const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session?.access_token}`
-      },
-      body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
-    })
-
-    const resData = await res.json()
-    if (!res.ok) return setMessage("❌ Erreur : " + (resData.error || "Erreur inconnue"))
-
-    const { error } = await supabase.from("members").insert([{
-      name: newMember.toUpperCase(),
-      active: true,
-      email: newMemberEmail,
-      user_id: resData.user_id,
-      grade: "Soldat"
-    }])
-
-    if (error) return setMessage("❌ Erreur insertion : " + error.message)
-
-    setNewMember("")
-    setNewMemberEmail("")
-    setNewMemberPassword("")
-    setMessage(`✅ Membre ${newMember.toUpperCase()} créé !`)
-    loadData()
+    try {
+      const res = await fetch(EDGE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
+      })
+      const resData = await res.json()
+      if (!res.ok) return setMessage("❌ Erreur auth : " + (resData.error || "inconnue"))
+      const { error } = await supabase.from("members").insert([{
+        name: newMember.toUpperCase(), active: true, email: newMemberEmail, user_id: resData.user_id, grade: "Soldat"
+      }])
+      if (error) return setMessage("❌ Erreur insertion : " + error.message)
+      setNewMember(""); setNewMemberEmail(""); setNewMemberPassword("")
+      setMessage(`✅ Membre ${newMember.toUpperCase()} créé !`)
+      loadData()
+    } catch (e) {
+      setMessage("❌ Erreur réseau : " + e.message)
+    }
   }
 
   const handleDeleteMember = async (id) => {
@@ -200,22 +155,6 @@ export default function App() {
     loadData()
   }
 
-  const handleAddStock = async () => {
-    if (!stockForm.coffre_id || !stockForm.item || !stockForm.quantite) return setMessage("❌ Remplis tous les champs")
-    const { error } = await supabase.from("stock_items").insert([{
-      coffre_id: parseInt(stockForm.coffre_id),
-      item: stockForm.item,
-      quantite: parseInt(stockForm.quantite),
-      action: stockForm.action
-    }])
-    if (error) setMessage("❌ Erreur : " + error.message)
-    else {
-      setMessage("✅ Stock mis à jour !")
-      loadData()
-      setTimeout(() => setMessage(""), 3000)
-    }
-  }
-
   const myScores = scores.find(s => s.member_id === member?.id)
   const mySalaire = salaires.find(s => s.member_id === member?.id)
   const myActivities = activities.filter(a => a.member_id === member?.id).slice(0, 5)
@@ -226,12 +165,12 @@ export default function App() {
   const myActions = activities.filter(a => a.member_id === member?.id && ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
   const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
 
-  const input = (val, onChange, type = "text", placeholder = "") => (
+  const inp = (val, onChange, type = "text", placeholder = "") => (
     <input type={type} value={val} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
   )
 
-  const select = (val, onChange, options) => (
+  const sel = (val, onChange, options) => (
     <select value={val} onChange={e => onChange(e.target.value)}
       style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 14 }}>
       {options}
@@ -239,16 +178,14 @@ export default function App() {
   )
 
   const card = (children, style = {}) => (
-    <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1.25rem", ...style }}>
-      {children}
-    </div>
+    <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1.25rem", ...style }}>{children}</div>
   )
 
   const goldBtn = (label, onClick, style = {}) => (
     <button onClick={onClick} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#0a1628", fontWeight: 700, cursor: "pointer", fontSize: 14, ...style }}>{label}</button>
   )
 
-  const statFraction = (label, value, total, color = COLORS.gold) => (
+  const statFrac = (label, value, total, color = COLORS.gold) => (
     <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
       <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
       <div style={{ fontSize: 22, fontWeight: 700, color }}>{value} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {total}</span></div>
@@ -259,15 +196,15 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
       <div style={{ width: 400, background: COLORS.card, borderRadius: 20, padding: "2.5rem", border: `1px solid ${COLORS.border}` }}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <img src="/frenchriviera.png" alt="French Riviera" style={{ height: 120, objectFit: "contain" }} />
+          <img src="/frenchriviera.png" alt="FR" style={{ height: 120, objectFit: "contain" }} />
         </div>
         <div style={{ marginBottom: 14 }}>
           <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
-          {input(loginForm.email, v => setLoginForm({ ...loginForm, email: v }), "email")}
+          {inp(loginForm.email, v => setLoginForm({ ...loginForm, email: v }), "email")}
         </div>
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
-          {input(loginForm.password, v => setLoginForm({ ...loginForm, password: v }), "password")}
+          {inp(loginForm.password, v => setLoginForm({ ...loginForm, password: v }), "password")}
         </div>
         {loginError && <p style={{ color: COLORS.danger, textAlign: "center", marginBottom: 14, fontSize: 13 }}>{loginError}</p>}
         {goldBtn("Se connecter", handleLogin, { width: "100%", padding: 14, fontSize: 16 })}
@@ -301,8 +238,10 @@ export default function App() {
             ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
           ].map(item => (
             <button key={item.id} onClick={() => setPage(item.id)} style={{
-              width: "100%", padding: "12px 20px", border: "none", background: page === item.id ? `${COLORS.blue}88` : "transparent",
-              color: page === item.id ? COLORS.gold : COLORS.textMuted, textAlign: "left", cursor: "pointer", fontSize: 14,
+              width: "100%", padding: "12px 20px", border: "none",
+              background: page === item.id ? `${COLORS.blue}88` : "transparent",
+              color: page === item.id ? COLORS.gold : COLORS.textMuted,
+              textAlign: "left", cursor: "pointer", fontSize: 14,
               borderLeft: page === item.id ? `3px solid ${COLORS.gold}` : "3px solid transparent",
               display: "flex", alignItems: "center", gap: 10
             }}>
@@ -315,11 +254,10 @@ export default function App() {
         </div>
         <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
           <button onClick={async () => {
-            const newPwd = prompt("Nouveau mot de passe (6 caractères min) :")
-            if (!newPwd) return
-            if (newPwd.length < 6) return alert("❌ Trop court, minimum 6 caractères.")
-            const { error } = await supabase.auth.updateUser({ password: newPwd })
-            if (error) alert("❌ Erreur : " + error.message)
+            const p = prompt("Nouveau mot de passe (6 car. min) :")
+            if (!p || p.length < 6) return alert("❌ Trop court.")
+            const { error } = await supabase.auth.updateUser({ password: p })
+            if (error) alert("❌ " + error.message)
             else alert("✅ Mot de passe mis à jour !")
           }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13, marginBottom: 8 }}>
             🔑 Changer mot de passe
@@ -338,9 +276,9 @@ export default function App() {
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
-              {statFraction("Nombre de ventes", myVentes, totalVentes)}
-              {statFraction("Nombre de plantations", myPlantations, totalPlantations)}
-              {statFraction("Actions", myActions, totalActions)}
+              {statFrac("Nombre de ventes", myVentes, totalVentes)}
+              {statFrac("Nombre de plantations", myPlantations, totalPlantations)}
+              {statFrac("Actions", myActions, totalActions)}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
                 <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Salaire</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.success }}>
@@ -359,7 +297,7 @@ export default function App() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               {card(<>
-                <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>Disponibilités actions</h3>
+                <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Disponibilités actions</h3>
                 {[
                   { type: "Atm", label: "ATM", cooldown: 3 },
                   { type: "Apu", label: "APU", cooldown: 2 },
@@ -367,13 +305,10 @@ export default function App() {
                   { type: "Go fast", label: "GO FAST", cooldown: 24 }
                 ].map(({ type, label, cooldown }) => {
                   const last = activities.filter(a => a.member_id === member?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-                  const now = new Date()
                   const lastDate = last ? new Date(last.created_at) : null
-                  const diffH = lastDate ? (now - lastDate) / 3600000 : null
+                  const diffH = lastDate ? (new Date() - lastDate) / 3600000 : null
                   const available = !lastDate || diffH >= cooldown
                   const remaining = lastDate && !available ? cooldown - diffH : 0
-                  const remainH = Math.floor(remaining)
-                  const remainM = Math.floor((remaining - remainH) * 60)
                   return (
                     <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
                       <div>
@@ -384,38 +319,34 @@ export default function App() {
                       </div>
                       {available
                         ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
-                        : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {remainH}h {remainM}m</span>
+                        : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {Math.floor(remaining)}h {Math.floor((remaining - Math.floor(remaining)) * 60)}m</span>
                       }
                     </div>
                   )
                 })}
               </>)}
-
               {card(<>
-                <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>Quotas de la semaine</h3>
+                <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Quotas de la semaine</h3>
                 {[
-                  { label: "Actions effectuées", value: myActions, total: quotas.actions, color: COLORS.gold },
+                  { label: "Actions", value: myActions, total: quotas.actions, color: COLORS.gold },
                   { label: "Plantations", value: myPlantations, total: quotas.plantations, color: "#4ade80" },
                   { label: "Ventes", value: myVentes, total: quotas.ventes, color: "#60a5fa" }
-                ].map(({ label, value, total, color }) => {
-                  const pct = Math.min(Math.round((value / total) * 100), 100)
-                  return (
-                    <div key={label} style={{ marginBottom: 16 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
-                        <span style={{ color: COLORS.textMuted }}>{label}</span>
-                        <span style={{ color, fontWeight: 600 }}>{value} / {total}</span>
-                      </div>
-                      <div style={{ background: "#0a1628", borderRadius: 6, height: 8, overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 6, transition: "width 0.5s ease" }} />
-                      </div>
+                ].map(({ label, value, total, color }) => (
+                  <div key={label} style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
+                      <span style={{ color: COLORS.textMuted }}>{label}</span>
+                      <span style={{ color, fontWeight: 600 }}>{value} / {total}</span>
                     </div>
-                  )
-                })}
+                    <div style={{ background: "#0a1628", borderRadius: 6, height: 8, overflow: "hidden" }}>
+                      <div style={{ width: `${Math.min(Math.round((value / total) * 100), 100)}%`, height: "100%", background: color, borderRadius: 6 }} />
+                    </div>
+                  </div>
+                ))}
               </>)}
             </div>
 
             {card(<>
-              <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dernières activités</h3>
+              <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Dernières activités</h3>
               {myActivities.length === 0
                 ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucune activité cette semaine.</p>
                 : myActivities.map(a => (
@@ -427,7 +358,7 @@ export default function App() {
                       {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <button onClick={async () => {
-                      if (!confirm("Supprimer cette activité ?")) return
+                      if (!confirm("Supprimer ?")) return
                       await supabase.from("activities").delete().eq("id", a.id)
                       loadData()
                     }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
@@ -443,7 +374,7 @@ export default function App() {
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
               <h2 style={{ color: COLORS.gold, margin: 0 }}>Classement</h2>
-              <select value={semaine?.id || ""} onChange={e => { const s = semaines.find(x => x.id === parseInt(e.target.value)); setSemaine(s) }}
+              <select value={semaine?.id || ""} onChange={e => setSemaine(semaines.find(x => x.id === parseInt(e.target.value)))}
                 style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.card, color: COLORS.text }}>
                 {semaines.map(s => <option key={s.id} value={s.id}>{s.nom}{s.active ? " (en cours)" : ""}</option>)}
               </select>
@@ -485,32 +416,30 @@ export default function App() {
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
               <h2 style={{ color: COLORS.gold }}>Salaires</h2>
-              <select value={semaine?.id || ""} onChange={e => { const s = semaines.find(x => x.id === parseInt(e.target.value)); setSemaine(s) }}
+              <select value={semaine?.id || ""} onChange={e => setSemaine(semaines.find(x => x.id === parseInt(e.target.value)))}
                 style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.card, color: COLORS.text }}>
                 {semaines.map(s => <option key={s.id} value={s.id}>{s.nom}</option>)}
               </select>
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: COLORS.blue }}>
-                    {["Membre","Salaire Ventes","Salaire Plantations","Total"].map(h => (
-                      <th key={h} style={{ padding: "12px 16px", textAlign: h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => (
-                    <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-                      <td style={{ padding: "12px 16px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_vente).toLocaleString()} $</td>
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_plantation).toLocaleString()} $</td>
-                      <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{Math.round(s.salaire_total).toLocaleString()} $</td>
-                    </tr>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: COLORS.blue }}>
+                  {["Membre","Salaire Ventes","Salaire Plantations","Total"].map(h => (
+                    <th key={h} style={{ padding: "12px 16px", textAlign: h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+              <tbody>
+                {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => (
+                  <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                    <td style={{ padding: "12px 16px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_vente).toLocaleString()} $</td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_plantation).toLocaleString()} $</td>
+                    <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{Math.round(s.salaire_total).toLocaleString()} $</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -520,22 +449,18 @@ export default function App() {
             <h2 style={{ color: COLORS.gold, marginBottom: "2rem" }}>Hiérarchie</h2>
             {(() => {
               const gradeOrder = ["Chef","Capo","Sous Capo","Commandant","Lieutenant","Soldat d'élite","Soldat"]
-              const gradeIcons = { "Chef": "👑", "Capo": "👑", "Sous Capo": "🥈", "Commandant": "⭐", "Lieutenant": "🎖️", "Soldat d'élite": "🗡️", "Soldat": "⚔️" }
+              const gradeIcons = { "Chef":"👑","Capo":"👑","Sous Capo":"🥈","Commandant":"⭐","Lieutenant":"🎖️","Soldat d'élite":"🗡️","Soldat":"⚔️" }
               const gradeColors = {
-                "Chef": { bg: `${COLORS.blue}88`, border: COLORS.gold, text: COLORS.gold, sub: "#aaa" },
-                "Capo": { bg: `${COLORS.blue}88`, border: COLORS.gold, text: COLORS.gold, sub: "#aaa" },
-                "Sous Capo": { bg: `${COLORS.blue}44`, border: COLORS.blueLight, text: COLORS.text, sub: COLORS.textMuted },
-                "Commandant": { bg: `${COLORS.blue}33`, border: "#6b7fa3", text: COLORS.text, sub: COLORS.textMuted },
-                "Lieutenant": { bg: `${COLORS.blue}22`, border: "#444", text: COLORS.text, sub: COLORS.textMuted },
-                "Soldat d'élite": { bg: COLORS.card, border: "#444", text: COLORS.text, sub: COLORS.textMuted },
-                "Soldat": { bg: COLORS.card, border: COLORS.border, text: COLORS.text, sub: COLORS.textMuted }
+                "Chef": { border: COLORS.gold }, "Capo": { border: COLORS.gold },
+                "Sous Capo": { border: COLORS.blueLight }, "Commandant": { border: "#6b7fa3" },
+                "Lieutenant": { border: "#555" }, "Soldat d'élite": { border: "#444" }, "Soldat": { border: COLORS.border }
               }
               const grouped = gradeOrder.reduce((acc, g) => {
                 const list = members.filter(m => (m.grade || "Soldat") === g)
                 if (list.length > 0) acc.push({ grade: g, members: list })
                 return acc
               }, [])
-              return grouped.map(({ grade, members: gradeMembers }, gi) => {
+              return grouped.map(({ grade, members: gm }, gi) => {
                 const c = gradeColors[grade] || gradeColors["Soldat"]
                 const icon = gradeIcons[grade] || "⚔️"
                 const isTop = ["Chef","Capo"].includes(grade)
@@ -543,8 +468,8 @@ export default function App() {
                   <div key={grade}>
                     {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
                     <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
-                      {gradeMembers.map(m => (
-                        <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid ${c.border}`, minWidth: isTop ? 180 : 140, width: isTop ? 180 : 140 }}>
+                      {gm.map(m => (
+                        <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid ${c.border}`, width: isTop ? 180 : 140 }}>
                           {MEMBER_PHOTOS[m.name]
                             ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 240 : 180, objectFit: "cover", objectPosition: "center top", display: "block" }} />
                             : <div style={{ width: "100%", height: isTop ? 240 : 180, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 56 : 40 }}>{icon}</div>
@@ -567,7 +492,7 @@ export default function App() {
         {page === "membres" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Membres</h2>
-            {members.map((m) => (
+            {members.map(m => (
               <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", marginBottom: 8, borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.card }}>
                 <div style={{ width: 38, height: 38, borderRadius: "50%", background: COLORS.blue, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: COLORS.gold }}>{m.name[0]}</div>
                 <span style={{ flex: 1, fontWeight: 600 }}>{m.name}</span>
@@ -586,7 +511,7 @@ export default function App() {
               {isAdmin && (
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Membre</label>
-                  {select(form.member_id, v => setForm({...form, member_id: v}),
+                  {sel(form.member_id, v => setForm({...form, member_id: v}),
                     [<option key="" value="">-- Choisir --</option>, ...members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)]
                   )}
                 </div>
@@ -594,23 +519,23 @@ export default function App() {
               {!isAdmin && <p style={{ color: COLORS.textMuted, marginBottom: 14, fontSize: 14 }}>Saisie pour <strong style={{ color: COLORS.gold }}>{member?.name}</strong></p>}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Semaine</label>
-                {select(form.semaine_id, v => setForm({...form, semaine_id: v}), semaines.map(s => <option key={s.id} value={s.id}>{s.nom}</option>))}
+                {sel(form.semaine_id, v => setForm({...form, semaine_id: v}), semaines.map(s => <option key={s.id} value={s.id}>{s.nom}</option>))}
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Type d'activité</label>
-                {select(form.type, v => setForm({...form, type: v, drogue: ""}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
+                {sel(form.type, v => setForm({...form, type: v, drogue: ""}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
               </div>
               {form.type === "vente" && (
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
-                  {select(form.drogue, v => setForm({...form, drogue: v}),
+                  {sel(form.drogue, v => setForm({...form, drogue: v}),
                     [<option key="" value="">-- Choisir --</option>, ...DROGUES_LIST.map(d => <option key={d} value={d}>{d}</option>)]
                   )}
                 </div>
               )}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
-                {input(form.quantity, v => setForm({...form, quantity: v}), "number")}
+                {inp(form.quantity, v => setForm({...form, quantity: v}), "number")}
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Date & heure</label>
@@ -627,31 +552,24 @@ export default function App() {
         {page === "stock" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
-            {(() => {
-              const items = stockCamera.filter(s => s.coffre === "Caméra 29")
-              return (
-                <div>
-                  {card(<>
-                    <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre 29</h3>
-                    {items.length === 0
-                      ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
-                      : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                        {items.map(s => (
-                          <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
-                            {ITEM_IMAGES[s.item?.toUpperCase()]
-                              ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
-                              : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
-                            }
-                            <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
-                          </div>
-                        ))}
-                      </div>
-                    }
-                  </>)}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre 29</h3>
+              {stockCamera.filter(s => s.coffre === "Caméra 29").length === 0
+                ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
+                : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                  {stockCamera.filter(s => s.coffre === "Caméra 29").map(s => (
+                    <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
+                      {ITEM_IMAGES[s.item?.toUpperCase()]
+                        ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
+                        : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
+                      }
+                      <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
+                    </div>
+                  ))}
                 </div>
-              )
-            })()}
+              }
+            </>)}
           </div>
         )}
 
@@ -664,15 +582,15 @@ export default function App() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Nom</label>
-                  {input(newMember, setNewMember, "text", "Nom du membre")}
+                  {inp(newMember, setNewMember, "text", "Nom du membre")}
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
-                  {input(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
+                  {inp(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
-                  {input(newMemberPassword, setNewMemberPassword, "password", "Min 6 caractères")}
+                  {inp(newMemberPassword, setNewMemberPassword, "password", "Min 6 caractères")}
                 </div>
                 {goldBtn("Ajouter", handleAddMember)}
               </div>
@@ -684,7 +602,7 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: COLORS.blue }}>
-                    {["Membre","Email","UID","Grade","Mot de passe","Action"].map(h => (
+                    {["Membre","Email","UID","Grade","MDP","Action"].map(h => (
                       <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -703,18 +621,17 @@ export default function App() {
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         <button onClick={async () => {
-                          if (!m.user_id) return alert("Ce membre n'a pas de compte auth.")
-                          const newPwd = prompt(`Nouveau mot de passe pour ${m.name} :`)
-                          if (!newPwd) return
-                          if (newPwd.length < 6) return alert("❌ Minimum 6 caractères.")
-                          const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+                          if (!m.user_id) return alert("Pas de compte auth.")
+                          const p = prompt(`Nouveau MDP pour ${m.name} :`)
+                          if (!p || p.length < 6) return alert("❌ Min 6 caractères.")
+                          const res = await fetch(EDGE_URL, {
                             method: "POST",
                             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
-                            body: JSON.stringify({ user_id: m.user_id, password: newPwd })
+                            body: JSON.stringify({ user_id: m.user_id, password: p })
                           })
-                          if (res.ok) alert(`✅ Mot de passe de ${m.name} mis à jour !`)
-                          else alert("❌ Erreur lors du changement.")
-                        }} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.blueLight, color: "#fff", cursor: "pointer", fontSize: 12, marginRight: 6 }}>🔑 MDP</button>
+                          if (res.ok) alert(`✅ MDP de ${m.name} mis à jour !`)
+                          else alert("❌ Erreur.")
+                        }} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.blueLight, color: "#fff", cursor: "pointer", fontSize: 12 }}>🔑</button>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
@@ -736,7 +653,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              {goldBtn("Sauvegarder les quotas", async () => {
+              {goldBtn("Sauvegarder", async () => {
                 await supabase.from("quotas").update({ actions: quotas.actions, plantations: quotas.plantations, ventes: quotas.ventes }).eq("id", 1)
                 setMessage("✅ Quotas mis à jour !")
                 setTimeout(() => setMessage(""), 3000)
