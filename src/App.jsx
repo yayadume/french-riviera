@@ -60,7 +60,6 @@ export default function App() {
   const [newMemberPassword, setNewMemberPassword] = useState("")
   const [quotas, setQuotas] = useState({ actions: 24, plantations: 108, ventes: 600 })
   const [stockCamera, setStockCamera] = useState([])
-  const [coffres, setCoffres] = useState([])
 
   const isAdmin = member?.name === "DUME"
 
@@ -94,8 +93,6 @@ export default function App() {
     setForm(f => ({ ...f, semaine_id: active?.id || "" }))
     const { data: m } = await supabase.from("members").select("*").order("name")
     setMembers(m || [])
-    const { data: c } = await supabase.from("coffres").select("*").order("nom")
-    setCoffres(c || [])
     const { data: sc } = await supabase.from("stock_camera").select("*")
     setStockCamera(sc || [])
     const { data: q } = await supabase.from("quotas").select("*").single()
@@ -123,25 +120,13 @@ export default function App() {
   const handleAddMember = async () => {
     if (!newMember.trim()) return setMessage("❌ Nom requis")
     if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
-    if (!newMemberPassword || newMemberPassword.length < 6) return setMessage("❌ Mot de passe trop court")
-    try {
-      const res = await fetch(EDGE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
-      })
-      const resData = await res.json()
-      if (!res.ok) return setMessage("❌ Erreur auth : " + (resData.error || "inconnue"))
-      const { error } = await supabase.from("members").insert([{
-        name: newMember.toUpperCase(), active: true, email: newMemberEmail, user_id: resData.user_id, grade: "Soldat"
-      }])
-      if (error) return setMessage("❌ Erreur insertion : " + error.message)
-      setNewMember(""); setNewMemberEmail(""); setNewMemberPassword("")
-      setMessage(`✅ Membre ${newMember.toUpperCase()} créé !`)
-      loadData()
-    } catch (e) {
-      setMessage("❌ Erreur réseau : " + e.message)
-    }
+    const { error } = await supabase.from("members").insert([{
+      name: newMember.toUpperCase(), active: true, email: newMemberEmail, grade: "Soldat"
+    }])
+    if (error) return setMessage("❌ Erreur : " + error.message)
+    setNewMember(""); setNewMemberEmail(""); setNewMemberPassword("")
+    setMessage(`✅ Membre ${newMember.toUpperCase()} ajouté ! Crée son compte Auth dans Supabase et lie l'UID via SQL.`)
+    loadData()
   }
 
   const handleDeleteMember = async (id) => {
@@ -294,7 +279,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               {card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Disponibilités actions</h3>
@@ -344,7 +328,6 @@ export default function App() {
                 ))}
               </>)}
             </div>
-
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Dernières activités</h3>
               {myActivities.length === 0
@@ -579,7 +562,7 @@ export default function App() {
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Nom</label>
                   {inp(newMember, setNewMember, "text", "Nom du membre")}
@@ -587,10 +570,6 @@ export default function App() {
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
                   {inp(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
-                  {inp(newMemberPassword, setNewMemberPassword, "password", "Min 6 caractères")}
                 </div>
                 {goldBtn("Ajouter", handleAddMember)}
               </div>
