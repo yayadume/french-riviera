@@ -287,10 +287,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
-  <div style={{ textAlign: "center", marginBottom: 10, padding: "1rem 0" }}>
-    <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
-  </div>
+        <div style={{ textAlign: "center", padding: "1rem 0" }}>
+  <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
+</div>
+<div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
   <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
     Déconnexion
   </button>
