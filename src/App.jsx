@@ -291,6 +291,16 @@ export default function App() {
   <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
 </div>
 <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
+  <button onClick={async () => {
+    const newPwd = prompt("Nouveau mot de passe (6 caractères min) :")
+    if (!newPwd) return
+    if (newPwd.length < 6) return alert("❌ Trop court, minimum 6 caractères.")
+    const { error } = await supabase.auth.updateUser({ password: newPwd })
+    if (error) alert("❌ Erreur : " + error.message)
+    else alert("✅ Mot de passe mis à jour !")
+  }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13, marginBottom: 8 }}>
+    🔑 Changer mot de passe
+  </button>
   <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
     Déconnexion
   </button>
