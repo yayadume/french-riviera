@@ -26,6 +26,7 @@ const ITEM_IMAGES = {
   "CARTE PP": "/carte-pp.png",
   "BRANCHE": "/branche.png"
 }
+
 const MEMBER_PHOTOS = {
   "DUME": "/dume.png",
   "JORDAN": "/jordan.png",
@@ -75,14 +76,13 @@ export default function App() {
   const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) })
   const [message, setMessage] = useState("")
   const [newMember, setNewMember] = useState("")
+  const [newMemberEmail, setNewMemberEmail] = useState("")
+  const [newMemberPassword, setNewMemberPassword] = useState("")
   const [quotas, setQuotas] = useState({ actions: 24, plantations: 108, ventes: 600 })
   const [stocks, setStocks] = useState([])
   const [stockCamera, setStockCamera] = useState([])
   const [coffres, setCoffres] = useState([])
   const [stockForm, setStockForm] = useState({ coffre_id: "", item: "", quantite: 1, action: "depose" })
-  const [newMemberEmail, setNewMemberEmail] = useState("")
-const [newMemberPassword, setNewMemberPassword] = useState("")
-const [showAddForm, setShowAddForm] = useState(false)
 
   const isAdmin = member?.name === "DUME"
 
@@ -155,72 +155,39 @@ const [showAddForm, setShowAddForm] = useState(false)
     }
   }
 
-const handleAddMember = async () => {
-  if (!newMember.trim()) return setMessage("❌ Nom requis")
-  if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
-  if (!newMemberPassword || newMemberPassword.length < 6) return setMessage("❌ Mot de passe trop court")
-  
-  alert(`Nom: ${newMember} | Email: ${newMemberEmail} | MDP: ${newMemberPassword.length} caractères`)
+  const handleAddMember = async () => {
+    if (!newMember.trim()) return setMessage("❌ Nom requis")
+    if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
+    if (!newMemberPassword || newMemberPassword.length < 6) return setMessage("❌ Mot de passe trop court")
 
-  const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${session?.access_token}`
-    },
-    body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
-  })
+    const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session?.access_token}`
+      },
+      body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
+    })
 
-  const resData = await res.json()
-  if (!res.ok) return setMessage("❌ Erreur : " + (resData.error || "Erreur inconnue"))
+    const resData = await res.json()
+    if (!res.ok) return setMessage("❌ Erreur : " + (resData.error || "Erreur inconnue"))
 
-  await supabase.from("members").insert([{
-    name: newMember.toUpperCase(),
-    active: true,
-    email: newMemberEmail,
-    user_id: resData.user_id,
-    grade: "Soldat"
-  }])
+    const { error } = await supabase.from("members").insert([{
+      name: newMember.toUpperCase(),
+      active: true,
+      email: newMemberEmail,
+      user_id: resData.user_id,
+      grade: "Soldat"
+    }])
 
-  setNewMember("")
-  setNewMemberEmail("")
-  setNewMemberPassword("")
-  setMessage(`✅ Membre ${newMember.toUpperCase()} créé !`)
-  loadData()
-}
+    if (error) return setMessage("❌ Erreur insertion : " + error.message)
 
-  // Créer le compte auth via Edge Function
- const token = session?.access_token
-
-const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${token}`,
-    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wd2hmY2N6aHJxZ3JidHh5YWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNjA3MTcsImV4cCI6MjA5NjkzNjcxN30.Ma8retbs2oC9xDFLb6D4VzerPQCKsj1ehFUklAHQjc8"
-  },
-  body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
-})
-
-  const resData = await res.json()
-console.log("Réponse Edge Function:", resData, "Status:", res.status)
-if (!res.ok) return alert("❌ Erreur : " + (resData.error || "Erreur inconnue"))
-const user_id = resData.user_id
-console.log("user_id récupéré:", user_id)
-
-  // Insérer le membre avec l'UID et l'email
-  await supabase.from("members").insert([{
-    name: newMember.toUpperCase(),
-    active: true,
-    email,
-    user_id,
-    grade: "Soldat"
-  }])
-
-  setNewMember("")
-  loadData()
-  alert(`✅ Membre ${newMember.toUpperCase()} créé avec succès !`)
-}
+    setNewMember("")
+    setNewMemberEmail("")
+    setNewMemberPassword("")
+    setMessage(`✅ Membre ${newMember.toUpperCase()} créé !`)
+    loadData()
+  }
 
   const handleDeleteMember = async (id) => {
     if (!confirm("Supprimer ce membre ?")) return
@@ -277,13 +244,6 @@ console.log("user_id récupéré:", user_id)
     </div>
   )
 
-  const statCard = (label, value, color = COLORS.gold) => (
-    <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-      <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
-    </div>
-  )
-
   const goldBtn = (label, onClick, style = {}) => (
     <button onClick={onClick} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#0a1628", fontWeight: 700, cursor: "pointer", fontSize: 14, ...style }}>{label}</button>
   )
@@ -321,14 +281,14 @@ console.log("user_id récupéré:", user_id)
       {/* SIDEBAR */}
       <div style={{ width: 220, background: COLORS.sidebar, borderRight: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", position: "fixed", height: "100vh", zIndex: 10 }}>
         <div style={{ padding: "1.5rem 1rem", borderBottom: `1px solid ${COLORS.border}`, textAlign: "center" }}>
-  {MEMBER_PHOTOS[member?.name]
-    ? <img src={MEMBER_PHOTOS[member?.name]} alt={member?.name} style={{ width: 90, height: 90, objectFit: "cover", objectPosition: "center top", borderRadius: "50%", border: `2px solid ${COLORS.gold}` }} />
-    : <div style={{ width: 90, height: 90, borderRadius: "50%", background: COLORS.blue, border: `2px solid ${COLORS.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto" }}>👤</div>
-  }
-  <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
-  {isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
-  <Clock />
-</div>
+          {MEMBER_PHOTOS[member?.name]
+            ? <img src={MEMBER_PHOTOS[member?.name]} alt={member?.name} style={{ width: 90, height: 90, objectFit: "cover", objectPosition: "center top", borderRadius: "50%", border: `2px solid ${COLORS.gold}` }} />
+            : <div style={{ width: 90, height: 90, borderRadius: "50%", background: COLORS.blue, border: `2px solid ${COLORS.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto" }}>👤</div>
+          }
+          <div style={{ marginTop: 10, fontSize: 11, color: COLORS.gold, letterSpacing: "0.1em", textTransform: "uppercase" }}>{member?.name}</div>
+          {isAdmin && <div style={{ fontSize: 10, background: COLORS.gold, color: "#0a1628", borderRadius: 4, padding: "2px 8px", display: "inline-block", marginTop: 4, fontWeight: 700 }}>ADMIN</div>}
+          <Clock />
+        </div>
         <nav style={{ flex: 1, padding: "1rem 0" }}>
           {[
             { id: "dashboard", icon: "🏠", label: "Tableau de bord" },
@@ -351,23 +311,23 @@ console.log("user_id récupéré:", user_id)
           ))}
         </nav>
         <div style={{ textAlign: "center", padding: "1rem 0" }}>
-  <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
-</div>
-<div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
-  <button onClick={async () => {
-    const newPwd = prompt("Nouveau mot de passe (6 caractères min) :")
-    if (!newPwd) return
-    if (newPwd.length < 6) return alert("❌ Trop court, minimum 6 caractères.")
-    const { error } = await supabase.auth.updateUser({ password: newPwd })
-    if (error) alert("❌ Erreur : " + error.message)
-    else alert("✅ Mot de passe mis à jour !")
-  }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13, marginBottom: 8 }}>
-    🔑 Changer mot de passe
-  </button>
-  <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
-    Déconnexion
-  </button>
-</div>
+          <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
+        </div>
+        <div style={{ padding: "1rem", borderTop: `1px solid ${COLORS.border}` }}>
+          <button onClick={async () => {
+            const newPwd = prompt("Nouveau mot de passe (6 caractères min) :")
+            if (!newPwd) return
+            if (newPwd.length < 6) return alert("❌ Trop court, minimum 6 caractères.")
+            const { error } = await supabase.auth.updateUser({ password: newPwd })
+            if (error) alert("❌ Erreur : " + error.message)
+            else alert("✅ Mot de passe mis à jour !")
+          }} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13, marginBottom: 8 }}>
+            🔑 Changer mot de passe
+          </button>
+          <button onClick={() => supabase.auth.signOut()} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 13 }}>
+            Déconnexion
+          </button>
+        </div>
       </div>
 
       {/* CONTENU */}
@@ -377,7 +337,6 @@ console.log("user_id récupéré:", user_id)
         {page === "dashboard" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
-
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
               {statFraction("Nombre de ventes", myVentes, totalVentes)}
               {statFraction("Nombre de plantations", myPlantations, totalPlantations)}
@@ -584,21 +543,17 @@ console.log("user_id récupéré:", user_id)
                   <div key={grade}>
                     {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
                     <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
-                    {gradeMembers.map(m => (
+                      {gradeMembers.map(m => (
                         <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid ${c.border}`, minWidth: isTop ? 180 : 140, width: isTop ? 180 : 140 }}>
-  {MEMBER_PHOTOS[m.name]
-    ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 240 : 180, objectFit: "cover", objectPosition: "center top", display: "block" }} />
-    : <div style={{ width: "100%", height: isTop ? 240 : 180, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 56 : 40 }}>{icon}</div>
-  }
-  <div style={{
-    position: "absolute", bottom: 0, left: 0, right: 0,
-    background: "linear-gradient(transparent, rgba(0,0,0,0.85))",
-    padding: "30px 10px 10px", textAlign: "center"
-  }}>
-    <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: "#fff", textShadow: "0 1px 4px #000" }}>{m.name}</div>
-    <div style={{ fontSize: 11, color: c.border === COLORS.gold ? COLORS.gold : "#aaa", marginTop: 3, fontWeight: 600 }}>{grade}</div>
-  </div>
-</div>
+                          {MEMBER_PHOTOS[m.name]
+                            ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 240 : 180, objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                            : <div style={{ width: "100%", height: isTop ? 240 : 180, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 56 : 40 }}>{icon}</div>
+                          }
+                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.85))", padding: "30px 10px 10px", textAlign: "center" }}>
+                            <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: "#fff", textShadow: "0 1px 4px #000" }}>{m.name}</div>
+                            <div style={{ fontSize: 11, color: c.border === COLORS.gold ? COLORS.gold : "#aaa", marginTop: 3, fontWeight: 600 }}>{grade}</div>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -669,60 +624,60 @@ console.log("user_id récupéré:", user_id)
         )}
 
         {/* STOCK */}
-{page === "stock" && (
-  <div>
-    <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
-    {(() => {
-      const items = stockCamera.filter(s => s.coffre === "Caméra 29")
-      return (
-        <div>
-          {card(<>
-            <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre 29</h3>
-            {items.length === 0
-              ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
-              : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                {items.map(s => (
-                  <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
-                    {ITEM_IMAGES[s.item?.toUpperCase()]
-                      ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
-                      : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
+        {page === "stock" && (
+          <div>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
+            {(() => {
+              const items = stockCamera.filter(s => s.coffre === "Caméra 29")
+              return (
+                <div>
+                  {card(<>
+                    <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre 29</h3>
+                    {items.length === 0
+                      ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
+                      : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                        {items.map(s => (
+                          <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
+                            {ITEM_IMAGES[s.item?.toUpperCase()]
+                              ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
+                              : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
+                            }
+                            <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
+                          </div>
+                        ))}
+                      </div>
                     }
-                    <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
-                  </div>
-                ))}
-              </div>
-            }
-          </>)}
-        </div>
-      )
-    })()}
-  </div>
-)}
+                  </>)}
+                </div>
+              )
+            })()}
+          </div>
+        )}
 
         {/* ADMIN */}
         {page === "admin" && isAdmin && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
-           {card(<>
-  <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
-  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
-    <div>
-      <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Nom</label>
-      {input(newMember, setNewMember, "text", "Nom du membre")}
-    </div>
-    <div>
-      <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
-      {input(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
-    </div>
-    <div>
-      <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
-      {input(newMemberPassword, setNewMemberPassword, "password", "Min 6 caractères")}
-    </div>
-    {goldBtn("Ajouter", handleAddMember)}
-  </div>
-  {message && <p style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, marginTop: 10, fontSize: 13 }}>{message}</p>}
-</>, { marginBottom: 16 })}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Nom</label>
+                  {input(newMember, setNewMember, "text", "Nom du membre")}
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
+                  {input(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
+                  {input(newMemberPassword, setNewMemberPassword, "password", "Min 6 caractères")}
+                </div>
+                {goldBtn("Ajouter", handleAddMember)}
+              </div>
+              {message && <p style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, marginTop: 10, fontSize: 13 }}>{message}</p>}
+            </>, { marginBottom: 16 })}
 
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Gérer les membres</h3>
@@ -747,21 +702,23 @@ console.log("user_id récupéré:", user_id)
                         </select>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
-  <button onClick={async () => {
-    if (!m.user_id) return alert("Ce membre n'a pas de compte auth.")
-    const newPwd = prompt(`Nouveau mot de passe pour ${m.name} :`)
-    if (!newPwd) return
-    if (newPwd.length < 6) return alert("❌ Minimum 6 caractères.")
-    const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
-      body: JSON.stringify({ user_id: m.user_id, password: newPwd })
-    })
-    if (res.ok) alert(`✅ Mot de passe de ${m.name} mis à jour !`)
-    else alert("❌ Erreur lors du changement.")
-  }} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.blueLight, color: "#fff", cursor: "pointer", fontSize: 12, marginRight: 6 }}>🔑 MDP</button>
-  <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
-</td>
+                        <button onClick={async () => {
+                          if (!m.user_id) return alert("Ce membre n'a pas de compte auth.")
+                          const newPwd = prompt(`Nouveau mot de passe pour ${m.name} :`)
+                          if (!newPwd) return
+                          if (newPwd.length < 6) return alert("❌ Minimum 6 caractères.")
+                          const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+                            body: JSON.stringify({ user_id: m.user_id, password: newPwd })
+                          })
+                          if (res.ok) alert(`✅ Mot de passe de ${m.name} mis à jour !`)
+                          else alert("❌ Erreur lors du changement.")
+                        }} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.blueLight, color: "#fff", cursor: "pointer", fontSize: 12, marginRight: 6 }}>🔑 MDP</button>
+                      </td>
+                      <td style={{ padding: "10px 14px" }}>
+                        <button onClick={() => handleDeleteMember(m.id)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>Supprimer</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
