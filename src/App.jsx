@@ -155,10 +155,12 @@ const [showAddForm, setShowAddForm] = useState(false)
     }
   }
 
- const handleAddMember = async () => {
+const handleAddMember = async () => {
   if (!newMember.trim()) return setMessage("❌ Nom requis")
   if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
   if (!newMemberPassword || newMemberPassword.length < 6) return setMessage("❌ Mot de passe trop court")
+  
+  alert(`Nom: ${newMember} | Email: ${newMemberEmail} | MDP: ${newMemberPassword.length} caractères`)
 
   const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
     method: "POST",
@@ -188,14 +190,19 @@ const [showAddForm, setShowAddForm] = useState(false)
 }
 
   // Créer le compte auth via Edge Function
-  const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-    },
-    body: JSON.stringify({ email, password, create: true })
-  })
+ const { data: sessionData } = await supabase.auth.getSession()
+const token = sessionData.session?.access_token
+console.log("Token:", token ? "OK" : "MANQUANT")
+
+const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`,
+    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wd2hmY2N6aHJxZ3JidHh5YWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNjA3MTcsImV4cCI6MjA5NjkzNjcxN30.Ma8retbs2oC9xDFLb6D4VzerPQCKsj1ehFUklAHQjc8"
+  },
+  body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
+})
 
   const resData = await res.json()
 console.log("Réponse Edge Function:", resData, "Status:", res.status)
