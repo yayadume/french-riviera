@@ -152,12 +152,39 @@ export default function App() {
     }
   }
 
-  const handleAddMember = async () => {
-    if (!newMember.trim()) return
-    await supabase.from("members").insert([{ name: newMember.toUpperCase(), active: true }])
-    setNewMember("")
-    loadData()
-  }
+ const handleAddMember = async () => {
+  if (!newMember.trim()) return
+  const email = prompt(`Email pour ${newMember.toUpperCase()} :`)
+  if (!email) return
+  const password = prompt(`Mot de passe pour ${newMember.toUpperCase()} (6 caractères min) :`)
+  if (!password || password.length < 6) return alert("❌ Mot de passe trop court.")
+
+  // Créer le compte auth via Edge Function
+  const res = await fetch("https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+    },
+    body: JSON.stringify({ email, password, create: true })
+  })
+
+  if (!res.ok) return alert("❌ Erreur lors de la création du compte.")
+  const { user_id } = await res.json()
+
+  // Insérer le membre avec l'UID et l'email
+  await supabase.from("members").insert([{
+    name: newMember.toUpperCase(),
+    active: true,
+    email,
+    user_id,
+    grade: "Soldat"
+  }])
+
+  setNewMember("")
+  loadData()
+  alert(`✅ Membre ${newMember.toUpperCase()} créé avec succès !`)
+}
 
   const handleDeleteMember = async (id) => {
     if (!confirm("Supprimer ce membre ?")) return
