@@ -60,7 +60,8 @@ export default function App() {
   const [newMemberPassword, setNewMemberPassword] = useState("")
   const [quotas, setQuotas] = useState({ actions: 24, plantations: 108, ventes: 600 })
   const [stockCamera, setStockCamera] = useState([])
-
+  const [drugPrices, setDrugPrices] = useState([])
+  const [drugPricesSaving, setDrugPricesSaving] = useState(false)
   const isAdmin = member?.name === "DUME"
 
   useEffect(() => {
@@ -97,6 +98,8 @@ export default function App() {
     setStockCamera(sc || [])
     const { data: q } = await supabase.from("quotas").select("*").single()
     if (q) setQuotas(q)
+      const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
+setDrugPrices(dp || [])
   }
 
   const handleLogin = async () => {
@@ -639,7 +642,47 @@ export default function App() {
               })}
               {message && <p style={{ color: COLORS.success, marginTop: 10, fontSize: 13 }}>{message}</p>}
             </>, { marginBottom: 16 })}
-
+{card(<>
+  <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>💊 Prix des drogues</h3>
+  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+    <thead>
+      <tr style={{ background: COLORS.blue }}>
+        {["Drogue", "Prix d'achat ($)", "Prix de vente ($)"].map(h => (
+          <th key={h} style={{ padding: "10px 14px", textAlign: h === "Drogue" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {drugPrices.map((dp, i) => (
+        <tr key={dp.drogue} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+          <td style={{ padding: "10px 14px", fontWeight: 600, color: COLORS.gold }}>{dp.drogue}</td>
+          <td style={{ padding: "10px 14px", textAlign: "center" }}>
+            <input type="number" value={dp.prix_achat ?? 0}
+              onChange={e => setDrugPrices(drugPrices.map(d => d.drogue === dp.drogue ? { ...d, prix_achat: parseFloat(e.target.value) || 0 } : d))}
+              style={{ width: 110, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }} />
+          </td>
+          <td style={{ padding: "10px 14px", textAlign: "center" }}>
+            <input type="number" value={dp.prix_vente ?? 0}
+              onChange={e => setDrugPrices(drugPrices.map(d => d.drogue === dp.drogue ? { ...d, prix_vente: parseFloat(e.target.value) || 0 } : d))}
+              style={{ width: 110, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }} />
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 12 }}>
+    {goldBtn(drugPricesSaving ? "Sauvegarde..." : "Sauvegarder les prix", async () => {
+      setDrugPricesSaving(true)
+      for (const dp of drugPrices) {
+        await supabase.from("drug_prices").upsert({ drogue: dp.drogue, prix_achat: dp.prix_achat, prix_vente: dp.prix_vente, updated_at: new Date().toISOString() }, { onConflict: "drogue" })
+      }
+      setDrugPricesSaving(false)
+      setMessage("✅ Prix mis à jour !")
+      setTimeout(() => setMessage(""), 3000)
+    })}
+    {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
+  </div>
+</>, { marginBottom: 16 })}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Créer une semaine</h3>
               <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Les semaines vont du dimanche 19h au dimanche 19h suivant.</p>
