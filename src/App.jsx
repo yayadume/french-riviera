@@ -427,7 +427,6 @@ export default function App() {
                     <thead>
                       <tr style={{ background: COLORS.blue }}>
                         <th style={{ ...thStyle, textAlign: "left" }}>Produit</th>
-                        <th style={thStyle}>Qté</th>
                         {cols.map(c => (
                           <th key={c.key} style={{ ...thStyle, color: c.color }}>{c.label}<br /><span style={{ fontSize: 11, fontWeight: 400 }}>{c.pct}%</span></th>
                         ))}
@@ -440,7 +439,6 @@ export default function App() {
                         return (
                           <tr key={l.label} style={{ background: bg, borderBottom: `1px solid ${COLORS.border}` }}>
                             <td style={{ padding: "9px 12px", fontWeight: 600, color: isPlant ? "#4ade80" : COLORS.text }}>{l.label}</td>
-                            <td style={{ padding: "9px 12px", textAlign: "center", color: l.qty > 0 ? COLORS.text : COLORS.textMuted }}>{l.qty}</td>
                             {cols.map(c => {
                               const prime = l.beneficeNet > 0 ? Math.round(l.qty * l.beneficeNet * (c.pct / 100)) : 0
                               const primeUnit = l.beneficeNet > 0 ? Math.round(l.beneficeNet * (c.pct / 100)) : 0
@@ -461,7 +459,7 @@ export default function App() {
                     </tbody>
                     <tfoot>
                       <tr style={{ background: COLORS.blue }}>
-                        <td colSpan={2} style={{ padding: "10px 12px", fontWeight: 700, color: COLORS.gold, fontSize: 13 }}>TOTAL PRIME SEMAINE</td>
+                        <td colSpan={1} style={{ padding: "10px 12px", fontWeight: 700, color: COLORS.gold, fontSize: 13 }}>TOTAL PRIME SEMAINE</td>
                         {cols.map(c => {
                           const totalPlant = margeNetPlant > 0 ? Math.round(myPlantations * margeNetPlant * (c.pct / 100)) : 0
                           const totalDrogues = drugPrices.reduce((sum, dp) => {
