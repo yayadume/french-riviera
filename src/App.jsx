@@ -378,14 +378,18 @@ export default function App() {
               }
             </>)}
 
+            <div style={{ marginBottom: 16 }} />
+
             {/* BLOC INFOS PRIMES */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 14, textTransform: "uppercase" }}>📊 Infos — Primes de la semaine</h3>
               {(() => {
-                const HAUTS_GRADES = ["Chef","Capo","Sous Capo","Commandant","Lieutenant"]
-                const grade = member?.grade || "Charbon"
+                // Marge nette plantation par plantation
+                const coutPlant = (plantConfig.prix_graine ?? 0) + (plantConfig.prix_pot ?? 0)
+                const recettePlant = (plantConfig.nb_branches ?? 0) * (plantConfig.prix_branche_vente ?? 0)
+                const margeNetPlant = (recettePlant - coutPlant) * 0.70
 
-                // Meilleur planteur et vendeur de la semaine
+                // Meilleur planteur et vendeur
                 const plantParMembre = {}
                 const venteParMembre = {}
                 activities.forEach(a => {
@@ -397,109 +401,85 @@ export default function App() {
                 const isMeilleurPlanteur = myPlantations > 0 && plantParMembre[member?.id] === maxPlant
                 const isMeilleurVendeur = myVentes > 0 && venteParMembre[member?.id] === maxVente
 
-                // Calcul du % de prime selon grade
-                const getPct = (isMeilleur) => {
-                  if (isMeilleur) return primeConfig.meilleur
-                  if (HAUTS_GRADES.includes(grade)) return primeConfig.haut_grade
-                  if (grade === "Soldat" || grade === "Soldat d'élite") return primeConfig.soldat
-                  return primeConfig.charbon
-                }
-
-                const pctPlant = getPct(isMeilleurPlanteur)
-                const pctVente = getPct(isMeilleurVendeur)
-
-                // Marge nette plantation (par plantation) = (nb_branches * prix_branche_vente - prix_graine - prix_pot) * 0.70
-                const coutPlant = (plantConfig.prix_graine ?? 0) + (plantConfig.prix_pot ?? 0)
-                const recettePlant = (plantConfig.nb_branches ?? 0) * (plantConfig.prix_branche_vente ?? 0)
-                const margeNetPlant = (recettePlant - coutPlant) * 0.70
-
-                // Lignes plantation
-                const lignesPlantation = [
-                  {
-                    label: "Plantation",
-                    qty: myPlantations,
-                    beneficeNet: margeNetPlant,
-                    prime: Math.round(margeNetPlant * (pctPlant / 100)),
-                    totalPrime: Math.round(myPlantations * margeNetPlant * (pctPlant / 100)),
-                    pct: pctPlant,
-                    isMeilleur: isMeilleurPlanteur
-                  }
+                // Colonnes de grades
+                const cols = [
+                  { key: "charbon", label: "Charbon", pct: primeConfig.charbon, color: "#9ca3af" },
+                  { key: "soldat", label: "Soldat", pct: primeConfig.soldat, color: COLORS.text },
+                  { key: "haut_grade", label: "Haut gradé", pct: primeConfig.haut_grade, color: COLORS.gold },
+                  { key: "meilleur", label: "Top 1 🏆", pct: primeConfig.meilleur, color: COLORS.success },
                 ]
 
-                // Lignes drogues (ventes)
-                const lignesDrogues = drugPrices.map(dp => {
-                  const qtyVendue = activities.filter(a => a.member_id === member?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
-                  const beneficeNet = (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0)
-                  const prime = Math.round(beneficeNet * (pctVente / 100))
-                  const totalPrime = Math.round(qtyVendue * beneficeNet * (pctVente / 100))
-                  return { label: dp.drogue, qty: qtyVendue, beneficeNet, prime, totalPrime, pct: pctVente, isMeilleur: isMeilleurVendeur }
-                }).filter(l => l.qty > 0 || true)
-
-                const totalPrimePlant = lignesPlantation.reduce((s, l) => s + l.totalPrime, 0)
-                const totalPrimeDrogue = lignesDrogues.reduce((s, l) => s + l.totalPrime, 0)
-                const grandTotal = totalPrimePlant + totalPrimeDrogue
+                // Lignes : plantation + drogues
+                const lignes = [
+                  { label: "🌿 Plantation", beneficeNet: margeNetPlant, isMeilleurTop: isMeilleurPlanteur, qty: myPlantations },
+                  ...drugPrices.map(dp => ({
+                    label: `💊 ${dp.drogue}`,
+                    beneficeNet: (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0),
+                    isMeilleurTop: isMeilleurVendeur,
+                    qty: activities.filter(a => a.member_id === member?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
+                  }))
+                ]
 
                 const thStyle = { padding: "9px 12px", textAlign: "center", color: COLORS.gold, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${COLORS.border}`, textTransform: "uppercase", letterSpacing: "0.05em" }
-                const tdStyle = (center = true) => ({ padding: "9px 12px", textAlign: center ? "center" : "left", fontSize: 13, borderBottom: `1px solid ${COLORS.border}` })
 
                 return (
-                  <div>
-                    {/* Badge grade + meilleur */}
-                    <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-                      <span style={{ background: COLORS.blue, color: COLORS.gold, padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
-                        {grade} — Prime plantation : {pctPlant}% {isMeilleurPlanteur ? "🏆 Meilleur planteur" : ""}
-                      </span>
-                      <span style={{ background: COLORS.blue, color: COLORS.gold, padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
-                        Prime vente : {pctVente}% {isMeilleurVendeur ? "🏆 Meilleur vendeur" : ""}
-                      </span>
-                    </div>
-
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: COLORS.blue }}>
-                          <th style={{ ...thStyle, textAlign: "left" }}>Produit</th>
-                          <th style={thStyle}>Qté</th>
-                          <th style={thStyle}>Bénéfice net / unité</th>
-                          <th style={thStyle}>Prime / unité ({pctPlant}% / {pctVente}%)</th>
-                          <th style={thStyle}>Total prime</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Plantation */}
-                        {lignesPlantation.map(l => (
-                          <tr key="plantation" style={{ background: COLORS.card, borderBottom: `1px solid ${COLORS.border}` }}>
-                            <td style={{ ...tdStyle(false), color: "#4ade80", fontWeight: 600 }}>
-                              🌿 {l.label} {l.isMeilleur ? "🏆" : ""}
-                            </td>
-                            <td style={tdStyle()}>{l.qty}</td>
-                            <td style={tdStyle()}>{Math.round(l.beneficeNet).toLocaleString()} $</td>
-                            <td style={tdStyle()}>{Math.round(l.prime).toLocaleString()} $</td>
-                            <td style={{ ...tdStyle(), fontWeight: 700, color: COLORS.success }}>{l.totalPrime.toLocaleString()} $</td>
-                          </tr>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: COLORS.blue }}>
+                        <th style={{ ...thStyle, textAlign: "left" }}>Produit</th>
+                        <th style={thStyle}>Qté</th>
+                        {cols.map(c => (
+                          <th key={c.key} style={{ ...thStyle, color: c.color }}>{c.label}<br /><span style={{ fontSize: 11, fontWeight: 400 }}>{c.pct}%</span></th>
                         ))}
-                        {/* Séparateur */}
-                        <tr><td colSpan={5} style={{ padding: "4px 0", background: COLORS.bg }}></td></tr>
-                        {/* Drogues */}
-                        {lignesDrogues.map(l => (
-                          <tr key={l.label} style={{ background: COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-                            <td style={{ ...tdStyle(false), color: l.qty > 0 ? COLORS.text : COLORS.textMuted }}>
-                              💊 {l.label} {l.isMeilleur && l.qty > 0 ? "🏆" : ""}
-                            </td>
-                            <td style={{ ...tdStyle(), color: l.qty > 0 ? COLORS.text : COLORS.textMuted }}>{l.qty}</td>
-                            <td style={{ ...tdStyle(), color: l.beneficeNet > 0 ? COLORS.text : COLORS.textMuted }}>{l.beneficeNet > 0 ? `${Math.round(l.beneficeNet).toLocaleString()} $` : "—"}</td>
-                            <td style={{ ...tdStyle(), color: l.qty > 0 ? COLORS.text : COLORS.textMuted }}>{l.qty > 0 && l.beneficeNet > 0 ? `${Math.round(l.prime).toLocaleString()} $` : "—"}</td>
-                            <td style={{ ...tdStyle(), fontWeight: l.totalPrime > 0 ? 700 : 400, color: l.totalPrime > 0 ? COLORS.gold : COLORS.textMuted }}>{l.totalPrime > 0 ? `${l.totalPrime.toLocaleString()} $` : "—"}</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lignes.map((l, i) => {
+                        const isPlant = i === 0
+                        const bg = isPlant ? COLORS.card : i % 2 === 0 ? COLORS.card : COLORS.bg
+                        return (
+                          <tr key={l.label} style={{ background: bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                            <td style={{ padding: "9px 12px", fontWeight: 600, color: isPlant ? "#4ade80" : COLORS.text }}>{l.label}</td>
+                            <td style={{ padding: "9px 12px", textAlign: "center", color: l.qty > 0 ? COLORS.text : COLORS.textMuted }}>{l.qty}</td>
+                            {cols.map(c => {
+                              const prime = l.beneficeNet > 0 ? Math.round(l.qty * l.beneficeNet * (c.pct / 100)) : 0
+                              const primeUnit = l.beneficeNet > 0 ? Math.round(l.beneficeNet * (c.pct / 100)) : 0
+                              return (
+                                <td key={c.key} style={{ padding: "9px 12px", textAlign: "center" }}>
+                                  {l.beneficeNet > 0 ? (
+                                    <div>
+                                      <div style={{ fontWeight: 700, color: prime > 0 ? c.color : COLORS.textMuted, fontSize: 13 }}>{prime > 0 ? `${prime.toLocaleString()} $` : "—"}</div>
+                                      <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>{primeUnit} $/u</div>
+                                    </div>
+                                  ) : <span style={{ color: COLORS.textMuted }}>—</span>}
+                                </td>
+                              )
+                            })}
                           </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ background: COLORS.blue }}>
-                          <td colSpan={4} style={{ padding: "10px 12px", fontWeight: 700, color: COLORS.gold, fontSize: 13 }}>TOTAL PRIME SEMAINE</td>
-                          <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: COLORS.success, fontSize: 16 }}>{grandTotal.toLocaleString()} $</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: COLORS.blue }}>
+                        <td colSpan={2} style={{ padding: "10px 12px", fontWeight: 700, color: COLORS.gold, fontSize: 13 }}>TOTAL PRIME SEMAINE</td>
+                        {cols.map(c => {
+                          const totalPlant = margeNetPlant > 0 ? Math.round(myPlantations * margeNetPlant * (c.pct / 100)) : 0
+                          const totalDrogues = drugPrices.reduce((sum, dp) => {
+                            const beneficeNet = (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0)
+                            if (beneficeNet <= 0) return sum
+                            const qty = activities.filter(a => a.member_id === member?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
+                            return sum + Math.round(qty * beneficeNet * (c.pct / 100))
+                          }, 0)
+                          const total = totalPlant + totalDrogues
+                          return (
+                            <td key={c.key} style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: c.color, fontSize: 14 }}>
+                              {total > 0 ? `${total.toLocaleString()} $` : "—"}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    </tfoot>
+                  </table>
                 )
               })()}
             </>)}
