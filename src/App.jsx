@@ -62,6 +62,7 @@ export default function App() {
   const [stockCamera, setStockCamera] = useState([])
   const [drugPrices, setDrugPrices] = useState([])
   const [drugPricesSaving, setDrugPricesSaving] = useState(false)
+
   const isAdmin = member?.name === "DUME"
 
   useEffect(() => {
@@ -98,8 +99,8 @@ export default function App() {
     setStockCamera(sc || [])
     const { data: q } = await supabase.from("quotas").select("*").single()
     if (q) setQuotas(q)
-      const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
-setDrugPrices(dp || [])
+    const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
+    setDrugPrices(dp || [])
   }
 
   const handleLogin = async () => {
@@ -563,6 +564,8 @@ setDrugPrices(dp || [])
         {page === "admin" && isAdmin && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
+
+            {/* AJOUTER MEMBRE */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
@@ -579,6 +582,7 @@ setDrugPrices(dp || [])
               {message && <p style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, marginTop: 10, fontSize: 13 }}>{message}</p>}
             </>, { marginBottom: 16 })}
 
+            {/* GÉRER MEMBRES */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Gérer les membres</h3>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -624,6 +628,7 @@ setDrugPrices(dp || [])
               </table>
             </>, { marginBottom: 16 })}
 
+            {/* QUOTAS */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Quotas de la semaine</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
@@ -642,47 +647,104 @@ setDrugPrices(dp || [])
               })}
               {message && <p style={{ color: COLORS.success, marginTop: 10, fontSize: 13 }}>{message}</p>}
             </>, { marginBottom: 16 })}
-{card(<>
-  <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>💊 Prix des drogues</h3>
-  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-    <thead>
-      <tr style={{ background: COLORS.blue }}>
-        {["Drogue", "Prix d'achat ($)", "Prix de vente ($)"].map(h => (
-          <th key={h} style={{ padding: "10px 14px", textAlign: h === "Drogue" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {drugPrices.map((dp, i) => (
-        <tr key={dp.drogue} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-          <td style={{ padding: "10px 14px", fontWeight: 600, color: COLORS.gold }}>{dp.drogue}</td>
-          <td style={{ padding: "10px 14px", textAlign: "center" }}>
-            <input type="number" value={dp.prix_achat ?? 0}
-              onChange={e => setDrugPrices(drugPrices.map(d => d.drogue === dp.drogue ? { ...d, prix_achat: parseFloat(e.target.value) || 0 } : d))}
-              style={{ width: 110, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }} />
-          </td>
-          <td style={{ padding: "10px 14px", textAlign: "center" }}>
-            <input type="number" value={dp.prix_vente ?? 0}
-              onChange={e => setDrugPrices(drugPrices.map(d => d.drogue === dp.drogue ? { ...d, prix_vente: parseFloat(e.target.value) || 0 } : d))}
-              style={{ width: 110, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }} />
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-  <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 12 }}>
-    {goldBtn(drugPricesSaving ? "Sauvegarde..." : "Sauvegarder les prix", async () => {
-      setDrugPricesSaving(true)
-      for (const dp of drugPrices) {
-        await supabase.from("drug_prices").upsert({ drogue: dp.drogue, prix_achat: dp.prix_achat, prix_vente: dp.prix_vente, updated_at: new Date().toISOString() }, { onConflict: "drogue" })
-      }
-      setDrugPricesSaving(false)
-      setMessage("✅ Prix mis à jour !")
-      setTimeout(() => setMessage(""), 3000)
-    })}
-    {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
-  </div>
-</>, { marginBottom: 16 })}
+
+            {/* PRIX DES DROGUES */}
+            {card(<>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>💊 Prix des drogues</h3>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="Nom de la drogue..."
+                    id="new-drogue-input"
+                    style={{ padding: "7px 12px", borderRadius: 7, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 13, width: 200 }}
+                  />
+                  {goldBtn("+ Ajouter", async () => {
+                    const input = document.getElementById("new-drogue-input")
+                    const nom = input.value.trim().toUpperCase()
+                    if (!nom) return alert("❌ Saisis un nom de drogue.")
+                    if (drugPrices.find(d => d.drogue === nom)) return alert("❌ Cette drogue existe déjà.")
+                    const { error } = await supabase.from("drug_prices").insert([{ drogue: nom, prix_achat: 0, prix_vente: 0 }])
+                    if (error) return alert("❌ Erreur : " + error.message)
+                    input.value = ""
+                    loadData()
+                  }, { padding: "7px 14px", fontSize: 13 })}
+                </div>
+              </div>
+              {drugPrices.length === 0
+                ? <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Aucune drogue trouvée. Exécute le SQL d'initialisation dans Supabase.</p>
+                : <>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: COLORS.blue }}>
+                        {["Drogue", "Prix d'achat ($)", "Prix de vente ($)", "Marge", ""].map(h => (
+                          <th key={h} style={{ padding: "10px 14px", textAlign: h === "Drogue" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {drugPrices.map((dp, i) => {
+                        const marge = (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0)
+                        return (
+                          <tr key={dp.drogue} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                            <td style={{ padding: "10px 14px", fontWeight: 600, color: COLORS.gold }}>{dp.drogue}</td>
+                            <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                              <input
+                                type="number"
+                                min="0"
+                                value={dp.prix_achat ?? 0}
+                                onChange={e => setDrugPrices(drugPrices.map(d =>
+                                  d.drogue === dp.drogue ? { ...d, prix_achat: parseFloat(e.target.value) || 0 } : d
+                                ))}
+                                style={{ width: 120, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }}
+                              />
+                            </td>
+                            <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                              <input
+                                type="number"
+                                min="0"
+                                value={dp.prix_vente ?? 0}
+                                onChange={e => setDrugPrices(drugPrices.map(d =>
+                                  d.drogue === dp.drogue ? { ...d, prix_vente: parseFloat(e.target.value) || 0 } : d
+                                ))}
+                                style={{ width: 120, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }}
+                              />
+                            </td>
+                            <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: marge > 0 ? COLORS.success : marge < 0 ? COLORS.danger : COLORS.textMuted }}>
+                              {marge > 0 ? "+" : ""}{marge.toLocaleString()} $
+                            </td>
+                            <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                              <button onClick={async () => {
+                                if (!confirm(`Supprimer ${dp.drogue} ?`)) return
+                                await supabase.from("drug_prices").delete().eq("drogue", dp.drogue)
+                                loadData()
+                              }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>✕</button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14 }}>
+                    {goldBtn(drugPricesSaving ? "Sauvegarde..." : "💾 Sauvegarder les prix", async () => {
+                      setDrugPricesSaving(true)
+                      for (const dp of drugPrices) {
+                        await supabase.from("drug_prices").upsert(
+                          { drogue: dp.drogue, prix_achat: dp.prix_achat ?? 0, prix_vente: dp.prix_vente ?? 0, updated_at: new Date().toISOString() },
+                          { onConflict: "drogue" }
+                        )
+                      }
+                      setDrugPricesSaving(false)
+                      setMessage("✅ Prix mis à jour !")
+                      setTimeout(() => setMessage(""), 3000)
+                    }, { opacity: drugPricesSaving ? 0.6 : 1 })}
+                    {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
+                  </div>
+                </>
+              }
+            </>, { marginBottom: 16 })}
+
+            {/* CRÉER SEMAINE */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Créer une semaine</h3>
               <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Les semaines vont du dimanche 19h au dimanche 19h suivant.</p>
@@ -697,6 +759,7 @@ setDrugPrices(dp || [])
                 loadData()
               }, { marginTop: 12 })}
             </>)}
+
           </div>
         )}
 
