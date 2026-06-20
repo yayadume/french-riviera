@@ -268,7 +268,7 @@ export default function App() {
         {page === "dashboard" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
               {statFrac("Nombre de ventes", myVentes, totalVentes)}
               {statFrac("Nombre de plantations", myPlantations, totalPlantations)}
               {statFrac("Actions", myActions, totalActions)}
@@ -285,6 +285,22 @@ export default function App() {
                   {myScores?.points ?? 0}
                   <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)}</span>
                 </div>
+              </div>
+              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Classement</div>
+                {(() => {
+                  const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
+                  const rang = sorted.findIndex(s => s.member_id === member?.id) + 1
+                  const total = sorted.length
+                  const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
+                  return (
+                    <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>
+                      {medal && <span style={{ marginRight: 6 }}>{medal}</span>}
+                      {rang > 0 ? `#${rang}` : "—"}
+                      <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {total}</span>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
