@@ -444,12 +444,9 @@ export default function App() {
                               const primeUnit = l.beneficeNet > 0 ? Math.round(l.beneficeNet * (c.pct / 100)) : 0
                               return (
                                 <td key={c.key} style={{ padding: "9px 12px", textAlign: "center" }}>
-                                  {l.beneficeNet > 0 ? (
-                                    <div>
-                                      <div style={{ fontWeight: 700, color: prime > 0 ? c.color : COLORS.textMuted, fontSize: 13 }}>{prime > 0 ? `${prime.toLocaleString()} $` : "—"}</div>
-                                      <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>{primeUnit} $/u</div>
-                                    </div>
-                                  ) : <span style={{ color: COLORS.textMuted }}>—</span>}
+                                  {l.beneficeNet > 0
+                                    ? <span style={{ fontWeight: 700, color: primeUnit > 0 ? c.color : COLORS.textMuted, fontSize: 13 }}>{primeUnit > 0 ? `${primeUnit.toLocaleString()} $` : "—"}</span>
+                                    : <span style={{ color: COLORS.textMuted }}>—</span>}
                                 </td>
                               )
                             })}
