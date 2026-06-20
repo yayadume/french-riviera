@@ -62,6 +62,8 @@ export default function App() {
   const [stockCamera, setStockCamera] = useState([])
   const [drugPrices, setDrugPrices] = useState([])
   const [drugPricesSaving, setDrugPricesSaving] = useState(false)
+  const [plantConfig, setPlantConfig] = useState({ prix_graine: 0, prix_pot: 0, nb_branches: 0, prix_branche_vente: 0 })
+  const [plantSaving, setPlantSaving] = useState(false)
 
   const isAdmin = member?.name === "DUME"
 
@@ -101,6 +103,8 @@ export default function App() {
     if (q) setQuotas(q)
     const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
     setDrugPrices(dp || [])
+    const { data: pc } = await supabase.from("plantation_config").select("*").single()
+    if (pc) setPlantConfig(pc)
   }
 
   const handleLogin = async () => {
@@ -742,6 +746,63 @@ export default function App() {
                   </div>
                 </>
               }
+            </>, { marginBottom: 16 })}
+
+            {/* PLANTATION CONFIG */}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 20, fontSize: 14, textTransform: "uppercase" }}>🌿 Configuration plantation</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+                {[
+                  { key: "prix_graine", label: "Prix graine ($)" },
+                  { key: "prix_pot", label: "Prix pot ($)" },
+                  { key: "nb_branches", label: "Nb branches / plantation" },
+                  { key: "prix_branche_vente", label: "Prix vente branche ($)" },
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
+                    <input type="number" min="0" value={plantConfig[key] ?? 0}
+                      onChange={e => setPlantConfig({ ...plantConfig, [key]: parseFloat(e.target.value) || 0 })}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
+                  </div>
+                ))}
+              </div>
+              {(() => {
+                const coutAchat = (plantConfig.prix_graine ?? 0) + (plantConfig.prix_pot ?? 0)
+                const recette = (plantConfig.nb_branches ?? 0) * (plantConfig.prix_branche_vente ?? 0)
+                const margeBrut = recette - coutAchat
+                const margeNet = margeBrut * 0.40
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+                    {[
+                      { label: "Coût d'achat", value: coutAchat, color: COLORS.danger, prefix: "" },
+                      { label: "Recette brute", value: recette, color: COLORS.text, prefix: "" },
+                      { label: "Marge brute", value: margeBrut, color: margeBrut >= 0 ? COLORS.success : COLORS.danger, prefix: margeBrut >= 0 ? "+" : "" },
+                      { label: "Marge nette (40%)", value: margeNet, color: margeNet >= 0 ? COLORS.gold : COLORS.danger, prefix: margeNet >= 0 ? "+" : "" },
+                    ].map(({ label, value, color, prefix }) => (
+                      <div key={label} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "14px 16px" }}>
+                        <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color }}>{prefix}{Math.round(value).toLocaleString()} $</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                {goldBtn(plantSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
+                  setPlantSaving(true)
+                  await supabase.from("plantation_config").update({
+                    prix_graine: plantConfig.prix_graine,
+                    prix_pot: plantConfig.prix_pot,
+                    nb_branches: plantConfig.nb_branches,
+                    prix_branche_vente: plantConfig.prix_branche_vente,
+                    updated_at: new Date().toISOString()
+                  }).eq("id", 1)
+                  setPlantSaving(false)
+                  setMessage("✅ Configuration plantation sauvegardée !")
+                  setTimeout(() => setMessage(""), 3000)
+                }, { opacity: plantSaving ? 0.6 : 1 })}
+                {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
+              </div>
             </>, { marginBottom: 16 })}
 
             {/* CRÉER SEMAINE */}
