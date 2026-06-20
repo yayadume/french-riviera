@@ -770,14 +770,14 @@ export default function App() {
                 const coutAchat = (plantConfig.prix_graine ?? 0) + (plantConfig.prix_pot ?? 0)
                 const recette = (plantConfig.nb_branches ?? 0) * (plantConfig.prix_branche_vente ?? 0)
                 const margeBrut = recette - coutAchat
-                const margeNet = margeBrut * 0.40
+                const margeNet = margeBrut * 0.70
                 return (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
                     {[
                       { label: "Coût d'achat", value: coutAchat, color: COLORS.danger, prefix: "" },
                       { label: "Recette brute", value: recette, color: COLORS.text, prefix: "" },
                       { label: "Marge brute", value: margeBrut, color: margeBrut >= 0 ? COLORS.success : COLORS.danger, prefix: margeBrut >= 0 ? "+" : "" },
-                      { label: "Marge nette (40%)", value: margeNet, color: margeNet >= 0 ? COLORS.gold : COLORS.danger, prefix: margeNet >= 0 ? "+" : "" },
+                      { label: "Marge nette (30% taxe)", value: margeNet, color: margeNet >= 0 ? COLORS.gold : COLORS.danger, prefix: margeNet >= 0 ? "+" : "" },
                     ].map(({ label, value, color, prefix }) => (
                       <div key={label} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "14px 16px" }}>
                         <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
