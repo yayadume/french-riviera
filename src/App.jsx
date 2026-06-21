@@ -560,12 +560,12 @@ export default function App() {
           <div style={{ textAlign: "center" }}>
             <h2 style={{ color: COLORS.gold, marginBottom: "2rem" }}>Hiérarchie</h2>
             {(() => {
-              const gradeOrder = ["Chef","Capo","Sous Capo","Commandant","Lieutenant","Soldat d'élite","Soldat"]
-              const gradeIcons = { "Chef":"👑","Capo":"👑","Sous Capo":"🥈","Commandant":"⭐","Lieutenant":"🎖️","Soldat d'élite":"🗡️","Soldat":"⚔️" }
+              const gradeOrder = ["Chef","Capo","Sous Capo","Commandant","Lieutenant","Soldat d'élite","Soldat","Charbon"]
+              const gradeIcons = { "Chef":"👑","Capo":"👑","Sous Capo":"🥈","Commandant":"⭐","Lieutenant":"🎖️","Soldat d'élite":"🗡️","Soldat":"⚔️","Charbon":"🪨" }
               const gradeColors = {
                 "Chef": { border: COLORS.gold }, "Capo": { border: COLORS.gold },
                 "Sous Capo": { border: COLORS.blueLight }, "Commandant": { border: "#6b7fa3" },
-                "Lieutenant": { border: "#555" }, "Soldat d'élite": { border: "#444" }, "Soldat": { border: COLORS.border }
+                "Lieutenant": { border: "#555" }, "Soldat d'élite": { border: "#444" }, "Soldat": { border: COLORS.border }, "Charbon": { border: "#3a3a3a" }
               }
               const grouped = gradeOrder.reduce((acc, g) => {
                 const list = members.filter(m => (m.grade || "Soldat") === g)
