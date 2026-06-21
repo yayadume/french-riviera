@@ -9,7 +9,8 @@ const COLORS = {
 
 const ITEM_IMAGES = {
   "METH": "/meth.png", "TRANQ": "/tranq.png", "POCHON DE MEXICANA": "/mexicana.png",
-  "CANNABIS": "/Cannabis.png", "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png"
+  "CANNABIS": "/Cannabis.png", "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png",
+  "ARGENT": "/argent.png", "ARGENT SALE": "/argent sale.png"
 }
 
 const MEMBER_PHOTOS = {
