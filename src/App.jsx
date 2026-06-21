@@ -346,10 +346,23 @@ export default function App() {
                 </div>
               </div>
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Points</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>
-                  {myScores?.points ?? 0}
-                  <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)}</span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, height: "100%" }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Points</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>
+                      {myScores?.points ?? 0}
+                      <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)}</span>
+                    </div>
+                  </div>
+                  <div style={{ borderLeft: `1px solid ${COLORS.border}`, paddingLeft: 12 }}>
+                    <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pts Tablette</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: "#60a5fa" }}>
+                      {(() => {
+                        const nonCharbon = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                        return Math.round(scores.filter(s => s.semaine_id === semaine?.id && nonCharbon.includes(s.member_id)).reduce((sum, s) => sum + (s.points ?? 0), 0))
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
