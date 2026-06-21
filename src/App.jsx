@@ -272,6 +272,11 @@ export default function App() {
         {/* DASHBOARD */}
         {page === "dashboard" && (
           <div>
+            {/* BANNIÈRE */}
+            <div style={{ marginBottom: "1.5rem", borderRadius: 16, overflow: "hidden", border: `1px solid ${COLORS.border}` }}>
+              <img src="/banniere.png" alt="Bannière" style={{ width: "100%", display: "block", maxHeight: 200, objectFit: "cover" }} />
+            </div>
+
             {/* CLASSEMENT CENTRAL */}
             {(() => {
               const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
