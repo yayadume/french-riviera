@@ -272,24 +272,34 @@ export default function App() {
         {/* DASHBOARD */}
         {page === "dashboard" && (
           <div>
-            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Tableau de bord — {member?.name}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
-              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Classement</div>
-                {(() => {
-                  const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
-                  const rang = sorted.findIndex(s => s.member_id === member?.id) + 1
-                  const total = sorted.length
-                  const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
-                  return (
-                    <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>
-                      {medal && <span style={{ marginRight: 6 }}>{medal}</span>}
-                      {rang > 0 ? `#${rang}` : "—"}
-                      <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {total}</span>
+            {/* CLASSEMENT CENTRAL */}
+            {(() => {
+              const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
+              const rang = sorted.findIndex(s => s.member_id === member?.id) + 1
+              const total = sorted.length
+              const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
+              const rangColor = rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text
+              return (
+                <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+                  <div style={{ fontSize: 12, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 8 }}>
+                    Tableau de bord — {member?.name}
+                  </div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 16, background: `linear-gradient(135deg, ${COLORS.card}, ${COLORS.blue}44)`, border: `1px solid ${COLORS.gold}44`, borderRadius: 16, padding: "16px 40px" }}>
+                    {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
+                    <div>
+                      <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Classement semaine</div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                        <span style={{ fontSize: 48, fontWeight: 800, color: rangColor, lineHeight: 1 }}>#{rang > 0 ? rang : "—"}</span>
+                        <span style={{ fontSize: 18, color: COLORS.textMuted, fontWeight: 400 }}>/ {total}</span>
+                      </div>
                     </div>
-                  )
-                })()}
-              </div>
+                    {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
+                  </div>
+                </div>
+              )
+            })()}
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
               {statFrac("Nombre de ventes", myVentes, totalVentes)}
               {statFrac("Nombre de plantations", myPlantations, totalPlantations)}
               {statFrac("Actions", myActions, totalActions)}
