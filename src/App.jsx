@@ -284,11 +284,40 @@ export default function App() {
               const total = sorted.length
               const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
               const rangColor = rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text
-              return (
-                <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-                  <div style={{ fontSize: 12, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 8 }}>
-                    Tableau de bord — {member?.name}
+
+              // Classement plantations
+              const plantParMembre = {}
+              activities.forEach(a => {
+                if (a.type === "Plantation") plantParMembre[a.member_id] = (plantParMembre[a.member_id] || 0) + a.quantity
+              })
+              const sortedPlant = Object.entries(plantParMembre).sort((a, b) => b[1] - a[1])
+              const rangPlant = sortedPlant.findIndex(([id]) => parseInt(id) === member?.id) + 1
+              const medalPlant = rangPlant === 1 ? "🥇" : rangPlant === 2 ? "🥈" : rangPlant === 3 ? "🥉" : null
+
+              // Classement ventes
+              const venteParMembre = {}
+              activities.forEach(a => {
+                if (a.type === "vente") venteParMembre[a.member_id] = (venteParMembre[a.member_id] || 0) + a.quantity
+              })
+              const sortedVente = Object.entries(venteParMembre).sort((a, b) => b[1] - a[1])
+              const rangVente = sortedVente.findIndex(([id]) => parseInt(id) === member?.id) + 1
+              const medalVente = rangVente === 1 ? "🥇" : rangVente === 2 ? "🥈" : rangVente === 3 ? "🥉" : null
+
+              const miniCard = (label, rang, medal, icon) => (
+                <div style={{ background: `${COLORS.card}`, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "12px 20px", textAlign: "center", minWidth: 120 }}>
+                  <div style={{ fontSize: 10, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>{icon} {label}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                    {medal && <span style={{ fontSize: 16 }}>{medal}</span>}
+                    <span style={{ fontSize: 24, fontWeight: 800, color: rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text }}>
+                      {rang > 0 ? `#${rang}` : "—"}
+                    </span>
                   </div>
+                </div>
+              )
+
+              return (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: "2rem" }}>
+                  {miniCard("Plantations", rangPlant, medalPlant, "🌿")}
                   <div style={{ display: "inline-flex", alignItems: "center", gap: 16, background: `linear-gradient(135deg, ${COLORS.card}, ${COLORS.blue}44)`, border: `1px solid ${COLORS.gold}44`, borderRadius: 16, padding: "16px 40px" }}>
                     {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
                     <div>
@@ -300,6 +329,7 @@ export default function App() {
                     </div>
                     {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
                   </div>
+                  {miniCard("Ventes", rangVente, medalVente, "💊")}
                 </div>
               )
             })()}
