@@ -154,7 +154,7 @@ export default function App() {
 
   const myScores = scores.find(s => s.member_id === member?.id)
   const mySalaire = salaires.find(s => s.member_id === member?.id)
-  const myActivities = activities.filter(a => a.member_id === member?.id).slice(0, 5)
+  const myActivities = activities.filter(a => a.member_id === member?.id).slice(0, 10)
   const myVentes = activities.filter(a => a.member_id === member?.id && a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
   const totalVentes = activities.filter(a => a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
   const myPlantations = activities.filter(a => a.member_id === member?.id && a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
@@ -360,21 +360,34 @@ export default function App() {
               <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Dernières activités</h3>
               {myActivities.length === 0
                 ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucune activité cette semaine.</p>
-                : myActivities.map(a => (
-                  <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${COLORS.border}`, fontSize: 14 }}>
-                    <span style={{ color: COLORS.gold }}>{a.type}</span>
-                    {a.drogue && <span style={{ color: COLORS.textMuted }}>{a.drogue}</span>}
-                    <span>×{a.quantity}</span>
-                    <span style={{ color: COLORS.textMuted, fontSize: 12 }}>
-                      {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <button onClick={async () => {
-                      if (!confirm("Supprimer ?")) return
-                      await supabase.from("activities").delete().eq("id", a.id)
-                      loadData()
-                    }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
-                  </div>
-                ))
+                : <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: COLORS.blue }}>
+                      {["Type","Drogue","Quantité","Date & heure",""].map(h => (
+                        <th key={h} style={{ padding: "8px 12px", textAlign: h === "Type" || h === "" ? "left" : "center", color: COLORS.gold, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${COLORS.border}`, textTransform: "uppercase" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myActivities.map((a, i) => (
+                      <tr key={a.id} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                        <td style={{ padding: "9px 12px", color: COLORS.gold, fontWeight: 600 }}>{a.type}</td>
+                        <td style={{ padding: "9px 12px", textAlign: "center", color: COLORS.textMuted }}>{a.drogue || "—"}</td>
+                        <td style={{ padding: "9px 12px", textAlign: "center" }}>×{a.quantity}</td>
+                        <td style={{ padding: "9px 12px", textAlign: "center", color: COLORS.textMuted, fontSize: 12 }}>
+                          {new Date(a.created_at).toLocaleDateString('fr-FR')} {new Date(a.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td style={{ padding: "9px 12px", textAlign: "right" }}>
+                          <button onClick={async () => {
+                            if (!confirm("Supprimer ?")) return
+                            await supabase.from("activities").delete().eq("id", a.id)
+                            loadData()
+                          }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 11 }}>✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               }
             </>)}
 
@@ -454,26 +467,6 @@ export default function App() {
                         )
                       })}
                     </tbody>
-                    <tfoot>
-                      <tr style={{ background: COLORS.blue }}>
-                        <td colSpan={1} style={{ padding: "10px 12px", fontWeight: 700, color: COLORS.gold, fontSize: 13 }}>TOTAL PRIME SEMAINE</td>
-                        {cols.map(c => {
-                          const totalPlant = margeNetPlant > 0 ? Math.round(myPlantations * margeNetPlant * (c.pct / 100)) : 0
-                          const totalDrogues = drugPrices.reduce((sum, dp) => {
-                            const beneficeNet = (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0)
-                            if (beneficeNet <= 0) return sum
-                            const qty = activities.filter(a => a.member_id === member?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
-                            return sum + Math.round(qty * beneficeNet * (c.pct / 100))
-                          }, 0)
-                          const total = totalPlant + totalDrogues
-                          return (
-                            <td key={c.key} style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: c.color, fontSize: 14 }}>
-                              {total > 0 ? `${total.toLocaleString()} $` : "—"}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    </tfoot>
                   </table>
                 )
               })()}
