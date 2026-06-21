@@ -14,7 +14,8 @@ const ITEM_IMAGES = {
 
 const MEMBER_PHOTOS = {
   "DUME": "/dume.png", "JORDAN": "/jordan.png", "CIRO": "/ciro.png",
-  "TONY": "/tony.png", "PARKER": "/parker.png", "MARTINO": "/martino.png", "MAMADE": "/mamade.png"
+  "TONY": "/tony.png", "PARKER": "/parker.png", "MARTINO": "/martino.png", "MAMADE": "/mamade.png",
+  "ASHLEY": "/ashley.png", "DON": "/don.png", "NEXYO": "/nexyo.png"
 }
 
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
