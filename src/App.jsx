@@ -656,14 +656,47 @@ export default function App() {
         {page === "membres" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Membres</h2>
-            {members.map(m => (
-              <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", marginBottom: 8, borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.card }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", background: COLORS.blue, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: COLORS.gold }}>{m.name[0]}</div>
-                <span style={{ flex: 1, fontWeight: 600 }}>{m.name}</span>
-                <span style={{ fontSize: 12, color: COLORS.textMuted }}>{m.grade || "Soldat"}</span>
-                <span style={{ fontSize: 12, color: m.active ? COLORS.success : COLORS.danger }}>{m.active ? "✅ Actif" : "❌ Inactif"}</span>
-              </div>
-            ))}
+            {(() => {
+              const gradeOrder = ["Chef","Capo","Sous Capo","Commandant","Lieutenant","Soldat d'élite","Soldat","Charbon"]
+              const gradeColors = {
+                "Chef": COLORS.gold, "Capo": COLORS.gold, "Sous Capo": COLORS.blueLight,
+                "Commandant": "#6b7fa3", "Lieutenant": "#8899bb", "Soldat d'élite": "#aab0c0",
+                "Soldat": COLORS.textMuted, "Charbon": "#555"
+              }
+              const gradeIcons = {
+                "Chef":"👑","Capo":"👑","Sous Capo":"🥈","Commandant":"⭐",
+                "Lieutenant":"🎖️","Soldat d'élite":"🗡️","Soldat":"⚔️","Charbon":"🪨"
+              }
+              return gradeOrder.map(grade => {
+                const list = members.filter(m => (m.grade || "Charbon") === grade)
+                if (list.length === 0) return null
+                return (
+                  <div key={grade} style={{ marginBottom: 28 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <span>{gradeIcons[grade]}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: gradeColors[grade], textTransform: "uppercase", letterSpacing: "0.1em" }}>{grade}</span>
+                      <div style={{ flex: 1, height: 1, background: `${gradeColors[grade]}44`, marginLeft: 8 }} />
+                      <span style={{ fontSize: 12, color: COLORS.textMuted }}>{list.length} membre{list.length > 1 ? "s" : ""}</span>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                      {list.map(m => (
+                        <div key={m.id} style={{ background: COLORS.card, border: `1px solid ${gradeColors[grade]}44`, borderRadius: 14, overflow: "hidden", width: 160, flexShrink: 0 }}>
+                          {MEMBER_PHOTOS[m.name]
+                            ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: 180, objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                            : <div style={{ width: "100%", height: 180, background: COLORS.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>{gradeIcons[grade]}</div>
+                          }
+                          <div style={{ padding: "10px 12px", borderTop: `1px solid ${gradeColors[grade]}44` }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: COLORS.text }}>{m.name}</div>
+                            <div style={{ fontSize: 11, color: gradeColors[grade], marginTop: 3, fontWeight: 600 }}>{grade}</div>
+                            <div style={{ fontSize: 11, color: m.active ? COLORS.success : COLORS.danger, marginTop: 4 }}>{m.active ? "✅ Actif" : "❌ Inactif"}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })
+            })()}
           </div>
         )}
 
