@@ -721,7 +721,7 @@ export default function App() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Type d'activité</label>
-                {sel(form.type, v => setForm({...form, type: v, drogue: ""}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
+                {sel(form.type, v => setForm({...form, type: v, drogue: "", quantity: ["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(v) ? 1 : form.quantity}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
               </div>
               {form.type === "vente" && (
                 <div style={{ marginBottom: 14 }}>
@@ -733,7 +733,10 @@ export default function App() {
               )}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
-                {inp(form.quantity, v => setForm({...form, quantity: v}), "number")}
+                {["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(form.type)
+                  ? <div style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.textMuted, boxSizing: "border-box", fontSize: 14 }}>1 <span style={{ fontSize: 12, color: COLORS.textMuted }}>(action unique)</span></div>
+                  : inp(form.quantity, v => setForm({...form, quantity: v}), "number")
+                }
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Date & heure</label>
