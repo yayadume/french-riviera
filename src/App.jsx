@@ -573,10 +573,59 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+
+            {/* BLOC CHAMPIONS */}
+            <div style={{ marginTop: 24 }}>
+              {(() => {
+                const sem = scores.filter(s => s.semaine_id === semaine?.id)
+                if (sem.length === 0) return null
+
+                const best = (key) => sem.reduce((a, b) => (b[key] ?? 0) > (a[key] ?? 0) ? b : a, sem[0])
+                const bestActions = sem.reduce((a, b) => {
+                  const ta = (a.cambu||0)+(a.atm||0)+(a.apu||0)+(a.go_fast||0)+(a.fleeca||0)+(a.armu||0)
+                  const tb = (b.cambu||0)+(b.atm||0)+(b.apu||0)+(b.go_fast||0)+(b.fleeca||0)+(b.armu||0)
+                  return tb > ta ? b : a
+                }, sem[0])
+                const totalActionsB = (bestActions.cambu||0)+(bestActions.atm||0)+(bestActions.apu||0)+(bestActions.go_fast||0)+(bestActions.fleeca||0)+(bestActions.armu||0)
+
+                // Meilleur salaire depuis la vue salaires
+                const bestSalaire = salaires.filter(s => s.semaine_id === semaine?.id).reduce((a, b) => (b.salaire_total ?? 0) > (a.salaire_total ?? 0) ? b : a, salaires[0] || {})
+
+                const champVente = best("vente")
+                const champPlant = best("plantation")
+                const champPrison = best("prison")
+
+                const trophies = [
+                  { icon: "💊", title: "Champion des Ventes", name: champVente?.member_name, value: `${champVente?.vente ?? 0} ventes`, color: "#f472b6" },
+                  { icon: "🌿", title: "Roi du Jardin", name: champPlant?.member_name, value: `${champPlant?.plantation ?? 0} plantations`, color: "#4ade80" },
+                  { icon: "⚡", title: "Top Action", name: bestActions?.member_name, value: `${totalActionsB} actions`, color: COLORS.gold },
+                  { icon: "⛓️", title: "Légende du Placard", name: champPrison?.member_name, value: `${champPrison?.prison ?? 0} prisons`, color: COLORS.danger },
+                  { icon: "💰", title: "Le plus Payé", name: bestSalaire?.member_name, value: `${Math.round(bestSalaire?.salaire_total ?? 0).toLocaleString()} $`, color: COLORS.success },
+                ]
+
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
+                    {trophies.map(t => (
+                      <div key={t.title} style={{ background: COLORS.card, border: `1px solid ${t.color}44`, borderRadius: 14, padding: "1.25rem", textAlign: "center", position: "relative", overflow: "hidden" }}>
+                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: t.color }} />
+                        <div style={{ fontSize: 32, marginBottom: 8 }}>{t.icon}</div>
+                        <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{t.title}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: t.color, marginBottom: 4 }}>
+                          {MEMBER_PHOTOS[t.name]
+                            ? <img src={MEMBER_PHOTOS[t.name]} alt={t.name} style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: `2px solid ${t.color}`, display: "block", margin: "0 auto 6px" }} />
+                            : <div style={{ width: 48, height: 48, borderRadius: "50%", background: COLORS.blue, border: `2px solid ${t.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, margin: "0 auto 6px" }}>👤</div>
+                          }
+                          {t.name || "—"}
+                        </div>
+                        <div style={{ fontSize: 12, color: COLORS.textMuted }}>{t.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
           </div>
         )}
-
-        {/* SALAIRES */}
         {page === "salaires" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
