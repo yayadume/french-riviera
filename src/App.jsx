@@ -154,7 +154,7 @@ export default function App() {
     loadData()
   }
 
-  const myScores = scores.find(s => s.member_id === member?.id)
+  const myScores = scores.find(s => s.member_id === member?.id && s.semaine_id === semaine?.id)
   const mySalaire = salaires.find(s => s.member_id === member?.id)
   const myActivities = activities.filter(a => a.member_id === member?.id).slice(0, 10)
   const myVentes = activities.filter(a => a.member_id === member?.id && a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
