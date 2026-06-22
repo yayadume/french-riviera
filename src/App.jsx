@@ -103,6 +103,9 @@ export default function App() {
     setMembers(m || [])
     const { data: sc } = await supabase.from("stock_camera").select("*")
     setStockCamera(sc || [])
+    const { data: sc60 } = await supabase.from("stock_coffre_60").select("*")
+    const { data: sc118 } = await supabase.from("stock_coffre_118").select("*")
+    setStockCamera([...(sc || []), ...(sc60 || []), ...(sc118 || [])])
     const { data: q } = await supabase.from("quotas").select("*").single()
     if (q) setQuotas(q)
     const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
@@ -802,24 +805,30 @@ export default function App() {
         {page === "stock" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
-            {card(<>
-              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre 29</h3>
-              {stockCamera.filter(s => s.coffre === "Caméra 29").length === 0
-                ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
-                : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                  {stockCamera.filter(s => s.coffre === "Caméra 29").map(s => (
-                    <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
-                      {ITEM_IMAGES[s.item?.toUpperCase()]
-                        ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
-                        : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
-                      }
-                      <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
-                    </div>
-                  ))}
-                </div>
-              }
-            </>)}
+            {[
+              { key: "Caméra 29", label: "29" },
+              { key: "Coffre 60", label: "60" },
+              { key: "Coffre 118", label: "118" }
+            ].map(({ key, label }) => (
+              card(<>
+                <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre {label}</h3>
+                {stockCamera.filter(s => s.coffre === key).length === 0
+                  ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
+                  : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                    {stockCamera.filter(s => s.coffre === key).map(s => (
+                      <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
+                        {ITEM_IMAGES[s.item?.toUpperCase()]
+                          ? <img src={ITEM_IMAGES[s.item.toUpperCase()]} alt={s.item} style={{ width: 70, height: 70, objectFit: "contain", borderRadius: 8, background: "#0a1628", padding: 6 }} />
+                          : <div style={{ width: 70, height: 70, borderRadius: 8, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📦</div>
+                        }
+                        <span style={{ fontWeight: 700, fontSize: 22, color: s.quantite > 0 ? COLORS.success : COLORS.danger }}>{s.quantite}</span>
+                      </div>
+                    ))}
+                  </div>
+                }
+              </>, { marginBottom: 16 })
+            ))}
           </div>
         )}
 
