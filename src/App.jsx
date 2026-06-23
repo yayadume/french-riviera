@@ -102,10 +102,13 @@ export default function App() {
     const { data: m } = await supabase.from("members").select("*").order("name")
     setMembers(m || [])
     const { data: sc } = await supabase.from("stock_camera").select("*")
-    setStockCamera(sc || [])
     const { data: sc60 } = await supabase.from("stock_coffre_60").select("*")
     const { data: sc118 } = await supabase.from("stock_coffre_118").select("*")
-    setStockCamera([...(sc || []), ...(sc60 || []), ...(sc118 || [])])
+    const { data: sc24 } = await supabase.from("stock_coffre_24").select("*")
+    const { data: sc129 } = await supabase.from("stock_coffre_129").select("*")
+    const { data: scv1 } = await supabase.from("stock_coffre_villa1").select("*")
+    const { data: scv2 } = await supabase.from("stock_coffre_villa2").select("*")
+    setStockCamera([...(sc || []), ...(sc24 || []), ...(sc60 || []), ...(sc118 || []), ...(sc129 || []), ...(scv1 || []), ...(scv2 || [])])
     const { data: q } = await supabase.from("quotas").select("*").single()
     if (q) setQuotas(q)
     const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
@@ -807,8 +810,12 @@ export default function App() {
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
             {[
               { key: "Caméra 29", label: "29" },
+              { key: "Coffre 24", label: "24" },
               { key: "Coffre 60", label: "60" },
-              { key: "Coffre 118", label: "118" }
+              { key: "Coffre 118", label: "118" },
+              { key: "Coffre 129", label: "129" },
+              { key: "Villa 1", label: "Villa 1" },
+              { key: "Villa 2", label: "Villa 2" },
             ].map(({ key, label }) => (
               card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre {label}</h3>
