@@ -819,10 +819,10 @@ export default function App() {
             ].map(({ key, label }) => (
               card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre {label}</h3>
-                {stockCamera.filter(s => s.coffre === key).length === 0
+                {stockCamera.filter(s => s.coffre === key && s.quantite > 0).length === 0
                   ? <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun item en stock.</p>
                   : <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                    {stockCamera.filter(s => s.coffre === key).map(s => (
+                    {stockCamera.filter(s => s.coffre === key && s.quantite > 0).map(s => (
                       <div key={s.item} style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 12px", width: 130, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                         <span style={{ fontWeight: 600, fontSize: 13, color: COLORS.text, textAlign: "center", textTransform: "uppercase" }}>{s.item}</span>
                         {ITEM_IMAGES[s.item?.toUpperCase()]
