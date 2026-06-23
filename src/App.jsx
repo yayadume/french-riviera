@@ -810,7 +810,6 @@ export default function App() {
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Stock</h2>
             {[
-              { key: "Caméra 29", label: "29" },
               { key: "Coffre 24", label: "24" },
               { key: "Coffre 60", label: "60" },
               { key: "Coffre 118", label: "118" },
