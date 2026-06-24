@@ -233,27 +233,31 @@ export default function App() {
           <Clock />
         </div>
         <nav style={{ flex: 1, padding: "1rem 0" }}>
-          {[
-            { id: "dashboard", icon: "🏠", label: "Tableau de bord" },
-            { id: "classement", icon: "🏆", label: "Classement" },
-            { id: "salaires", icon: "💰", label: "Salaires" },
-            { id: "hierarchie", icon: "👑", label: "Hiérarchie" },
-            { id: "membres", icon: "👥", label: "Membres" },
-            { id: "stock", icon: "📦", label: "Stock" },
-            { id: "saisie", icon: "✏️", label: "Saisir activité" },
-            ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
-          ].map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)} style={{
-              width: "100%", padding: "12px 20px", border: "none",
-              background: page === item.id ? `${COLORS.blue}88` : "transparent",
-              color: page === item.id ? COLORS.gold : COLORS.textMuted,
-              textAlign: "left", cursor: "pointer", fontSize: 14,
-              borderLeft: page === item.id ? `3px solid ${COLORS.gold}` : "3px solid transparent",
-              display: "flex", alignItems: "center", gap: 10
-            }}>
-              <span>{item.icon}</span>{item.label}
-            </button>
-          ))}
+          {(() => {
+            const isCharbon = member?.grade === "Charbon"
+            const allItems = [
+              { id: "dashboard", icon: "🏠", label: "Tableau de bord" },
+              { id: "classement", icon: "🏆", label: "Classement", restricted: true },
+              { id: "salaires", icon: "💰", label: "Salaires", restricted: true },
+              { id: "hierarchie", icon: "👑", label: "Hiérarchie", restricted: true },
+              { id: "membres", icon: "👥", label: "Membres", restricted: true },
+              { id: "stock", icon: "📦", label: "Stock", restricted: true },
+              { id: "saisie", icon: "✏️", label: "Saisir activité" },
+              ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
+            ]
+            return allItems.filter(item => !isCharbon || !item.restricted).map(item => (
+              <button key={item.id} onClick={() => setPage(item.id)} style={{
+                width: "100%", padding: "12px 20px", border: "none",
+                background: page === item.id ? `${COLORS.blue}88` : "transparent",
+                color: page === item.id ? COLORS.gold : COLORS.textMuted,
+                textAlign: "left", cursor: "pointer", fontSize: 14,
+                borderLeft: page === item.id ? `3px solid ${COLORS.gold}` : "3px solid transparent",
+                display: "flex", alignItems: "center", gap: 10
+              }}>
+                <span>{item.icon}</span>{item.label}
+              </button>
+            ))
+          })()}
         </nav>
         <div style={{ textAlign: "center", padding: "1rem 0" }}>
           <img src="/frenchriviera.png" alt="FR" style={{ height: 80, objectFit: "contain" }} />
