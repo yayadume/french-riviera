@@ -11,7 +11,8 @@ const ITEM_IMAGES = {
   "METH": "/meth.png", "TRANQ": "/tranq.png", "POCHON DE MEXICANA": "/mexicana.png",
   "CANNABIS": "/Cannabis.png", "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png",
   "ARGENT": "/argent.png", "ARGENT SALE": "/argent sale.png",
-  "METH BLEUE": "/meth-bleue.png", "BRANCHE DE CANNABIS": "/branche.png", "BOÎTIER DARKNET": "/boitier-darknet.png"
+  "METH BLEUE": "/meth-bleue.png", "BRANCHE DE CANNABIS": "/branche.png", "BOÎTIER DARKNET": "/boitier-darknet.png",
+  "COCAÏNE": "/cocaïne.png", "B MAGIC": "/b-magiq.png"
 }
 
 const MEMBER_PHOTOS = {
@@ -240,7 +241,6 @@ export default function App() {
               { id: "classement", icon: "🏆", label: "Classement", restricted: true },
               { id: "salaires", icon: "💰", label: "Salaires", restricted: true },
               { id: "hierarchie", icon: "👑", label: "Hiérarchie", restricted: true },
-              { id: "membres", icon: "👥", label: "Membres", restricted: true },
               { id: "stock", icon: "📦", label: "Stock", restricted: true },
               { id: "saisie", icon: "✏️", label: "Saisir activité" },
               ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
