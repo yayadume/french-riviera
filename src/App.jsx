@@ -70,6 +70,8 @@ export default function App() {
   const [plantSaving, setPlantSaving] = useState(false)
   const [primeConfig, setPrimeConfig] = useState({ charbon: 25, soldat: 33, haut_grade: 40, meilleur: 50 })
   const [primeSaving, setPrimeSaving] = useState(false)
+  const [pointsConfig, setPointsConfig] = useState({ plantation: 1.5, vente: 0.25, cambu: 3, atm: 3, apu: 3, go_fast: 3, prison: -0.5, armu: 62.5, fleeca: 150 })
+  const [pointsSaving, setPointsSaving] = useState(false)
 
   const isAdmin = member?.name === "DUME"
 
@@ -119,6 +121,8 @@ export default function App() {
     if (pc) setPlantConfig(pc)
     const { data: pr } = await supabase.from("prime_config").select("*").single()
     if (pr) setPrimeConfig(pr)
+    const { data: pts } = await supabase.from("points_config").select("*").single()
+    if (pts) setPointsConfig(pts)
   }
 
   const handleLogin = async () => {
@@ -1115,6 +1119,47 @@ export default function App() {
                   setMessage("✅ Primes mises à jour !")
                   setTimeout(() => setMessage(""), 3000)
                 }, { opacity: primeSaving ? 0.6 : 1 })}
+                {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
+              </div>
+            </>, { marginBottom: 16 })}
+
+            {/* POINTS CONFIG */}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 20, fontSize: 14, textTransform: "uppercase" }}>⭐ Points par activité</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
+                {[
+                  { key: "plantation", label: "🌿 Plantation" },
+                  { key: "vente", label: "💊 Vente" },
+                  { key: "cambu", label: "🏠 Cambu" },
+                  { key: "atm", label: "🏧 ATM" },
+                  { key: "apu", label: "🚔 APU" },
+                  { key: "go_fast", label: "🚗 Go fast" },
+                  { key: "prison", label: "⛓️ Prison" },
+                  { key: "armu", label: "🚛 Armu" },
+                  { key: "fleeca", label: "🏦 Fleeca" },
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
+                    <input type="number" value={pointsConfig[key] ?? 0}
+                      onChange={e => setPointsConfig({ ...pointsConfig, [key]: parseFloat(e.target.value) || 0 })}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: key === "prison" ? COLORS.danger : COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                {goldBtn(pointsSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
+                  setPointsSaving(true)
+                  await supabase.from("points_config").update({
+                    plantation: pointsConfig.plantation, vente: pointsConfig.vente,
+                    cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu,
+                    go_fast: pointsConfig.go_fast, prison: pointsConfig.prison,
+                    armu: pointsConfig.armu, fleeca: pointsConfig.fleeca,
+                    updated_at: new Date().toISOString()
+                  }).eq("id", 1)
+                  setPointsSaving(false)
+                  setMessage("✅ Points mis à jour !")
+                  setTimeout(() => setMessage(""), 3000)
+                }, { opacity: pointsSaving ? 0.6 : 1 })}
                 {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
               </div>
             </>, { marginBottom: 16 })}
