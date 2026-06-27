@@ -581,13 +581,21 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: COLORS.blue }}>
-                    {["Rang","Membre","Points","🌿 Plant.","💊 Vente","🏠 Cambu","🏧 ATM","🚔 APU","🚗 Go fast","⛓️ Prison","🚛 Armu","🏦 Fleeca"].map(h => (
+                    {["Rang","Membre","Points","🌿 Plant.","💊 Vente","🏠 Cambu","🏧 ATM","🚔 APU","🚗 Go fast","⛓️ Prison","🚛 Armu","🏦 Fleeca","📊 Quotas"].map(h => (
                       <th key={h} style={{ padding: "12px 10px", textAlign: h === "Rang" || h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {scores.filter(s => s.semaine_id === semaine?.id).sort((a,b) => b.points - a.points).map((s, i) => (
+                  {scores.filter(s => s.semaine_id === semaine?.id).sort((a,b) => b.points - a.points).map((s, i) => {
+                    // Calcul quotas pour ce membre
+                    const mActs = (s.cambu||0)+(s.atm||0)+(s.apu||0)+(s.go_fast||0)
+                    const pctA = quotas.actions > 0 ? Math.min((mActs / quotas.actions) * 100, 100) : 0
+                    const pctP = quotas.plantations > 0 ? Math.min(((s.plantation||0) / quotas.plantations) * 100, 100) : 0
+                    const pctV = quotas.ventes > 0 ? Math.min(((s.vente||0) / quotas.ventes) * 100, 100) : 0
+                    const pctTotal = Math.round((pctA + pctP + pctV) / 3)
+                    const pctColor = pctTotal >= 100 ? COLORS.success : pctTotal >= 50 ? COLORS.warning : COLORS.danger
+                    return (
                     <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
                       <td style={{ padding: "12px 10px" }}>{i < 3 ? MEDALS[i] : `#${i+1}`}</td>
                       <td style={{ padding: "12px 10px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
@@ -601,8 +609,11 @@ export default function App() {
                       <td style={{ padding: "12px 10px", textAlign: "center", color: s.prison > 0 ? COLORS.danger : COLORS.text }}>{s.prison}</td>
                       <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.armu}</td>
                       <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.fleeca}</td>
+                      <td style={{ padding: "12px 10px", textAlign: "center" }}>
+                        <span style={{ fontWeight: 700, color: pctColor, fontSize: 13 }}>{pctTotal}%</span>
+                      </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
