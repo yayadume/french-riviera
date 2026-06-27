@@ -418,17 +418,35 @@ export default function App() {
                   { label: "Actions", value: myActions, total: quotas.actions, color: COLORS.gold },
                   { label: "Plantations", value: myPlantations, total: quotas.plantations, color: "#4ade80" },
                   { label: "Ventes", value: myVentes, total: quotas.ventes, color: "#60a5fa" }
-                ].map(({ label, value, total, color }) => (
-                  <div key={label} style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
-                      <span style={{ color: COLORS.textMuted }}>{label}</span>
-                      <span style={{ color, fontWeight: 600 }}>{value} / {total}</span>
+                ].map(({ label, value, total, color }) => {
+                  const pct = total > 0 ? Math.min(Math.round((value / total) * 100), 100) : 0
+                  return (
+                    <div key={label} style={{ marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13 }}>
+                        <span style={{ color: COLORS.textMuted }}>{label}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ color, fontWeight: 600 }}>{value} / {total}</span>
+                          <span style={{ fontSize: 11, color: pct >= 100 ? COLORS.success : COLORS.textMuted, fontWeight: 700, background: pct >= 100 ? "#4ade8022" : "#ffffff11", padding: "2px 6px", borderRadius: 4 }}>{pct}%</span>
+                        </div>
+                      </div>
+                      <div style={{ background: "#0a1628", borderRadius: 6, height: 8, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 6 }} />
+                      </div>
                     </div>
-                    <div style={{ background: "#0a1628", borderRadius: 6, height: 8, overflow: "hidden" }}>
-                      <div style={{ width: `${Math.min(Math.round((value / total) * 100), 100)}%`, height: "100%", background: color, borderRadius: 6 }} />
+                  )
+                })}
+                {/* Total global */}
+                {(() => {
+                  const totalPct = Math.min(Math.round(
+                    ((myActions / quotas.actions) + (myPlantations / quotas.plantations) + (myVentes / quotas.ventes)) / 3 * 100
+                  ), 100)
+                  return (
+                    <div style={{ marginTop: 8, paddingTop: 12, borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Accomplissement global</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: totalPct >= 100 ? COLORS.success : totalPct >= 50 ? COLORS.warning : COLORS.danger }}>{totalPct}%</span>
                     </div>
-                  </div>
-                ))}
+                  )
+                })()}
               </>)}
             </div>
             {card(<>
