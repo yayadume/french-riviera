@@ -878,7 +878,46 @@ export default function App() {
             {/* PAGE FERTI */}
             {card(<>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>🌿 Contrats Fertilisant</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>🌿 Contrats Fertilisant</h3>
+                  {(() => {
+                    // Groupes uniques (dernier contrat par groupe)
+                    const groupesUniques = [...new Map(contratsFerti.map(c => [c.groupe?.toLowerCase(), c])).values()]
+                    const today = new Date()
+                    today.setHours(0,0,0,0)
+                    const aJour = groupesUniques.filter(c => {
+                      if (!c.date_texte) return false
+                      // Extraire la date de fin : "27/06 AU 04/07" ou "27/06/2026 AU 04/07/2026"
+                      const parts = c.date_texte.toUpperCase().split(/\s+AU\s+/)
+                      if (parts.length < 2) return false
+                      const fin = parts[1].trim()
+                      // Parser DD/MM ou DD/MM/YYYY
+                      const nums = fin.split('/')
+                      if (nums.length < 2) return false
+                      const day = parseInt(nums[0])
+                      const month = parseInt(nums[1]) - 1
+                      const year = nums[2] ? parseInt(nums[2]) : today.getFullYear()
+                      const dateFin = new Date(year, month, day)
+                      return dateFin >= today
+                    })
+                    return (
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ background: COLORS.blue, borderRadius: 8, padding: "6px 14px", fontSize: 13 }}>
+                          <span style={{ color: COLORS.textMuted }}>Total groupes : </span>
+                          <span style={{ color: COLORS.gold, fontWeight: 700 }}>{groupesUniques.length}</span>
+                        </div>
+                        <div style={{ background: "#4ade8022", border: `1px solid ${COLORS.success}44`, borderRadius: 8, padding: "6px 14px", fontSize: 13 }}>
+                          <span style={{ color: COLORS.textMuted }}>Taxe à jour : </span>
+                          <span style={{ color: COLORS.success, fontWeight: 700 }}>{aJour.length}</span>
+                        </div>
+                        <div style={{ background: "#f8717122", border: `1px solid ${COLORS.danger}44`, borderRadius: 8, padding: "6px 14px", fontSize: 13 }}>
+                          <span style={{ color: COLORS.textMuted }}>Expirés : </span>
+                          <span style={{ color: COLORS.danger, fontWeight: 700 }}>{groupesUniques.length - aJour.length}</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
                 <input
                   type="text"
                   placeholder="Rechercher groupe, MDP, taxe, date..."
