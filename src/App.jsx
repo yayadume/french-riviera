@@ -146,12 +146,25 @@ export default function App() {
   const handleAddMember = async () => {
     if (!newMember.trim()) return setMessage("❌ Nom requis")
     if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
+    if (!newMemberPassword.trim() || newMemberPassword.length < 6) return setMessage("❌ Mot de passe requis (6 car. min)")
+
+    // 1. Créer le compte Auth via Edge Function
+    const res = await fetch(EDGE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ email: newMemberEmail, password: newMemberPassword, create: true })
+    })
+    const data = await res.json()
+    if (!res.ok || !data.user_id) return setMessage("❌ Erreur création compte : " + (data.error || "inconnue"))
+
+    // 2. Créer le membre avec l'UID lié
     const { error } = await supabase.from("members").insert([{
-      name: newMember.toUpperCase(), active: true, email: newMemberEmail, grade: "Soldat"
+      name: newMember.toUpperCase(), active: true, email: newMemberEmail, grade: "Charbon", user_id: data.user_id
     }])
     if (error) return setMessage("❌ Erreur : " + error.message)
+
     setNewMember(""); setNewMemberEmail(""); setNewMemberPassword("")
-    setMessage(`✅ Membre ${newMember.toUpperCase()} ajouté ! Crée son compte Auth dans Supabase et lie l'UID via SQL.`)
+    setMessage(`✅ Membre ${newMember.toUpperCase()} créé avec son compte !`)
     loadData()
   }
 
@@ -884,7 +897,7 @@ export default function App() {
             {/* AJOUTER MEMBRE */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "end" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Nom</label>
                   {inp(newMember, setNewMember, "text", "Nom du membre")}
@@ -892,6 +905,10 @@ export default function App() {
                 <div>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Email</label>
                   {inp(newMemberEmail, setNewMemberEmail, "email", "email@frenchriviera.com")}
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Mot de passe</label>
+                  {inp(newMemberPassword, setNewMemberPassword, "password", "6 caractères min.")}
                 </div>
                 {goldBtn("Ajouter", handleAddMember)}
               </div>
