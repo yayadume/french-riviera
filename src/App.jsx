@@ -72,6 +72,8 @@ export default function App() {
   const [primeSaving, setPrimeSaving] = useState(false)
   const [pointsConfig, setPointsConfig] = useState({ plantation: 1.5, vente: 0.25, cambu: 3, atm: 3, apu: 3, go_fast: 3, prison: -0.5, armu: 62.5, fleeca: 150 })
   const [pointsSaving, setPointsSaving] = useState(false)
+  const [contratsFerti, setContratsFerti] = useState([])
+  const [fertiSearch, setFertiSearch] = useState("")
 
   const isAdmin = member?.name === "DUME"
 
@@ -123,6 +125,8 @@ export default function App() {
     if (pr) setPrimeConfig(pr)
     const { data: pts } = await supabase.from("points_config").select("*").single()
     if (pts) setPointsConfig(pts)
+    const { data: cf } = await supabase.from("contrats_ferti").select("*").order("created_at", { ascending: false })
+    setContratsFerti(cf || [])
   }
 
   const handleLogin = async () => {
@@ -258,6 +262,7 @@ export default function App() {
               { id: "classement", icon: "🏆", label: "Classement", restricted: true },
               { id: "salaires", icon: "💰", label: "Salaires", restricted: true },
               { id: "hierarchie", icon: "👑", label: "Hiérarchie", restricted: true },
+              { id: "contrats", icon: "📋", label: "Contrats", restricted: true },
               { id: "stock", icon: "📦", label: "Stock", restricted: true },
               { id: "saisie", icon: "✏️", label: "Saisir activité" },
               ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Administration" }] : [])
@@ -851,6 +856,76 @@ export default function App() {
               </div>
               {goldBtn("Ajouter l'activité", handleSubmit, { width: "100%" })}
               {message && <p style={{ textAlign: "center", marginTop: 12, color: message.includes("✅") ? COLORS.success : COLORS.danger }}>{message}</p>}
+            </>)}
+          </div>
+        )}
+
+        {/* CONTRATS */}
+        {page === "contrats" && (
+          <div>
+            <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Contrats</h2>
+
+            {/* Sous-onglets */}
+            <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem" }}>
+              {["Ferti"].map(tab => (
+                <button key={tab} style={{
+                  padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+                  background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#0a1628"
+                }}>{tab}</button>
+              ))}
+            </div>
+
+            {/* PAGE FERTI */}
+            {card(<>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>🌿 Contrats Fertilisant</h3>
+                <input
+                  type="text"
+                  placeholder="Rechercher groupe, MDP, taxe, date..."
+                  value={fertiSearch}
+                  onChange={e => setFertiSearch(e.target.value)}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 13, width: 300 }}
+                />
+              </div>
+              {(() => {
+                const filtered = contratsFerti.filter(c => {
+                  const q = fertiSearch.toLowerCase()
+                  if (!q) return true
+                  return (
+                    (c.groupe || "").toLowerCase().includes(q) ||
+                    (c.mdp || "").toLowerCase().includes(q) ||
+                    (c.taxe || "").toLowerCase().includes(q) ||
+                    (c.date_texte || "").toLowerCase().includes(q) ||
+                    (c.auteur || "").toLowerCase().includes(q)
+                  )
+                })
+                if (filtered.length === 0) return <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun contrat trouvé.</p>
+                return (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: COLORS.blue }}>
+                        {["Groupe", "MDP", "Taxe", "Date", "Posté par", "Le"].map(h => (
+                          <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}`, fontSize: 12, textTransform: "uppercase" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((c, i) => (
+                        <tr key={c.id} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                          <td style={{ padding: "10px 14px", fontWeight: 600, color: COLORS.gold }}>{c.groupe || "—"}</td>
+                          <td style={{ padding: "10px 14px", fontFamily: "monospace", color: "#60a5fa" }}>{c.mdp || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: COLORS.success }}>{c.taxe || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: COLORS.text }}>{c.date_texte || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: COLORS.textMuted }}>{c.auteur || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: COLORS.textMuted, fontSize: 11 }}>
+                            {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') + " " + new Date(c.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              })()}
             </>)}
           </div>
         )}
