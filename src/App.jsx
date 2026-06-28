@@ -74,6 +74,7 @@ export default function App() {
   const [pointsSaving, setPointsSaving] = useState(false)
   const [contratsFerti, setContratsFerti] = useState([])
   const [fertiSearch, setFertiSearch] = useState("")
+  const [fertiFilter, setFertiFilter] = useState("tous") // tous | ajour | expires
 
   const isAdmin = member?.name === "DUME"
 
@@ -902,15 +903,15 @@ export default function App() {
                     })
                     return (
                       <div style={{ display: "flex", gap: 12 }}>
-                        <div style={{ background: COLORS.blue, borderRadius: 8, padding: "6px 14px", fontSize: 13 }}>
+                        <div onClick={() => setFertiFilter("tous")} style={{ background: fertiFilter === "tous" ? COLORS.blue : `${COLORS.blue}44`, borderRadius: 8, padding: "6px 14px", fontSize: 13, cursor: "pointer", border: fertiFilter === "tous" ? `1px solid ${COLORS.gold}` : `1px solid transparent` }}>
                           <span style={{ color: COLORS.textMuted }}>Total groupes : </span>
                           <span style={{ color: COLORS.gold, fontWeight: 700 }}>{groupesUniques.length}</span>
                         </div>
-                        <div style={{ background: "#4ade8022", border: `1px solid ${COLORS.success}44`, borderRadius: 8, padding: "6px 14px", fontSize: 13 }}>
+                        <div onClick={() => setFertiFilter(fertiFilter === "ajour" ? "tous" : "ajour")} style={{ background: fertiFilter === "ajour" ? "#4ade8044" : "#4ade8022", border: `1px solid ${fertiFilter === "ajour" ? COLORS.success : COLORS.success+"44"}`, borderRadius: 8, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>
                           <span style={{ color: COLORS.textMuted }}>Taxe à jour : </span>
                           <span style={{ color: COLORS.success, fontWeight: 700 }}>{aJour.length}</span>
                         </div>
-                        <div style={{ background: "#f8717122", border: `1px solid ${COLORS.danger}44`, borderRadius: 8, padding: "6px 14px", fontSize: 13 }}>
+                        <div onClick={() => setFertiFilter(fertiFilter === "expires" ? "tous" : "expires")} style={{ background: fertiFilter === "expires" ? "#f8717144" : "#f8717122", border: `1px solid ${fertiFilter === "expires" ? COLORS.danger : COLORS.danger+"44"}`, borderRadius: 8, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>
                           <span style={{ color: COLORS.textMuted }}>Expirés : </span>
                           <span style={{ color: COLORS.danger, fontWeight: 700 }}>{groupesUniques.length - aJour.length}</span>
                         </div>
@@ -927,16 +928,28 @@ export default function App() {
                 />
               </div>
               {(() => {
+                const today2 = new Date(); today2.setHours(0,0,0,0)
+                const isAJour = (c) => {
+                  if (!c.date_texte) return false
+                  const parts = c.date_texte.toUpperCase().split(/\s+AU\s+/)
+                  if (parts.length < 2) return false
+                  const nums = parts[1].trim().split('/')
+                  if (nums.length < 2) return false
+                  const day = parseInt(nums[0]), month = parseInt(nums[1]) - 1
+                  const year = nums[2] ? parseInt(nums[2]) : today2.getFullYear()
+                  return new Date(year, month, day) >= today2
+                }
                 const filtered = contratsFerti.filter(c => {
                   const q = fertiSearch.toLowerCase()
-                  if (!q) return true
-                  return (
+                  const matchSearch = !q || (
                     (c.groupe || "").toLowerCase().includes(q) ||
                     (c.mdp || "").toLowerCase().includes(q) ||
                     (c.taxe || "").toLowerCase().includes(q) ||
                     (c.date_texte || "").toLowerCase().includes(q) ||
                     (c.auteur || "").toLowerCase().includes(q)
                   )
+                  const matchFilter = fertiFilter === "tous" || (fertiFilter === "ajour" && isAJour(c)) || (fertiFilter === "expires" && !isAJour(c))
+                  return matchSearch && matchFilter
                 })
                 if (filtered.length === 0) return <p style={{ color: COLORS.textMuted, fontSize: 14 }}>Aucun contrat trouvé.</p>
                 return (
