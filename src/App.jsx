@@ -898,7 +898,7 @@ export default function App() {
                     const aJour = groupesUniques.filter(c => {
                       if (!c.date_texte) return false
                       // Extraire la date de fin : "27/06 AU 04/07" ou "27/06/2026 AU 04/07/2026"
-                      const parts = c.date_texte.toUpperCase().split(/\s+AU\s+/)
+                      const parts = c.date_texte.toUpperCase().split(/\s+AUX?\s+/)
                       if (parts.length < 2) return false
                       const fin = parts[1].trim()
                       // Parser DD/MM ou DD/MM/YYYY
@@ -940,7 +940,7 @@ export default function App() {
                 const today2 = new Date(); today2.setHours(0,0,0,0)
                 const isAJour = (c) => {
                   if (!c.date_texte) return false
-                  const parts = c.date_texte.toUpperCase().split(/\s+AU\s+/)
+                  const parts = c.date_texte.toUpperCase().split(/\s+AUX?\s+/)
                   if (parts.length < 2) return false
                   const nums = parts[1].trim().split('/')
                   if (nums.length < 2) return false
