@@ -891,24 +891,26 @@ export default function App() {
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>🌿 Contrats Fertilisant</h3>
                   {(() => {
+                    // Extrait toutes les dates DD/MM(/YYYY) du texte, prend la dernière comme date de fin (23h59)
+                    const getDateFin = (texte) => {
+                      if (!texte) return null
+                      const regex = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/g
+                      const matches = [...texte.matchAll(regex)]
+                      if (matches.length === 0) return null
+                      const last = matches[matches.length - 1]
+                      const day = parseInt(last[1])
+                      const month = parseInt(last[2]) - 1
+                      let year = last[3] ? parseInt(last[3]) : new Date().getFullYear()
+                      if (year < 100) year += 2000
+                      const d = new Date(year, month, day, 23, 59, 59)
+                      return isNaN(d.getTime()) ? null : d
+                    }
                     // Groupes uniques (dernier contrat par groupe)
                     const groupesUniques = [...new Map(contratsFerti.map(c => [c.groupe?.toLowerCase(), c])).values()]
-                    const today = new Date()
-                    today.setHours(0,0,0,0)
+                    const now = new Date()
                     const aJour = groupesUniques.filter(c => {
-                      if (!c.date_texte) return false
-                      // Extraire la date de fin : "27/06 AU 04/07" ou "27/06/2026 AU 04/07/2026"
-                      const parts = c.date_texte.toUpperCase().split(/\s+AUX?\s+/)
-                      if (parts.length < 2) return false
-                      const fin = parts[1].trim()
-                      // Parser DD/MM ou DD/MM/YYYY
-                      const nums = fin.split('/')
-                      if (nums.length < 2) return false
-                      const day = parseInt(nums[0])
-                      const month = parseInt(nums[1]) - 1
-                      const year = nums[2] ? parseInt(nums[2]) : today.getFullYear()
-                      const dateFin = new Date(year, month, day)
-                      return dateFin >= today
+                      const fin = getDateFin(c.date_texte)
+                      return fin && fin >= now
                     })
                     return (
                       <div style={{ display: "flex", gap: 12 }}>
@@ -937,16 +939,38 @@ export default function App() {
                 />
               </div>
               {(() => {
-                const today2 = new Date(); today2.setHours(0,0,0,0)
+                const getDateFin = (texte) => {
+                  if (!texte) return null
+                  const regex = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/g
+                  const matches = [...texte.matchAll(regex)]
+                  if (matches.length === 0) return null
+                  const last = matches[matches.length - 1]
+                  const day = parseInt(last[1])
+                  const month = parseInt(last[2]) - 1
+                  let year = last[3] ? parseInt(last[3]) : new Date().getFullYear()
+                  if (year < 100) year += 2000
+                  const d = new Date(year, month, day, 23, 59, 59)
+                  return isNaN(d.getTime()) ? null : d
+                }
+                const now = new Date()
                 const isAJour = (c) => {
-                  if (!c.date_texte) return false
-                  const parts = c.date_texte.toUpperCase().split(/\s+AUX?\s+/)
-                  if (parts.length < 2) return false
-                  const nums = parts[1].trim().split('/')
-                  if (nums.length < 2) return false
-                  const day = parseInt(nums[0]), month = parseInt(nums[1]) - 1
-                  const year = nums[2] ? parseInt(nums[2]) : today2.getFullYear()
-                  return new Date(year, month, day) >= today2
+                  const fin = getDateFin(c.date_texte)
+                  return fin && fin >= now
+                }
+                const formatExpireDans = (c) => {
+                  const fin = getDateFin(c.date_texte)
+                  if (!fin) return "—"
+                  const diffMs = fin - now
+                  if (diffMs <= 0) return "Expiré"
+                  const diffH = diffMs / 3600000
+                  if (diffH < 24) {
+                    const h = Math.floor(diffH)
+                    const m = Math.floor((diffH - h) * 60)
+                    return `${h}h ${m}m`
+                  }
+                  const diffJ = Math.floor(diffH / 24)
+                  const remH = Math.floor(diffH % 24)
+                  return `${diffJ}j ${remH}h`
                 }
                 const filtered = contratsFerti.filter(c => {
                   const q = fertiSearch.toLowerCase()
@@ -965,7 +989,7 @@ export default function App() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: COLORS.blue }}>
-                        {["Groupe", "MDP", "Taxe", "Date", "Posté par", "Le"].map(h => (
+                        {(fertiFilter === "ajour" ? ["Groupe", "MDP", "Taxe", "Date", "Expire dans", "Posté par", "Le"] : ["Groupe", "MDP", "Taxe", "Date", "Posté par", "Le"]).map(h => (
                           <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}`, fontSize: 12, textTransform: "uppercase" }}>{h}</th>
                         ))}
                       </tr>
@@ -977,6 +1001,9 @@ export default function App() {
                           <td style={{ padding: "10px 14px", fontFamily: "monospace", color: "#60a5fa" }}>{c.mdp || "—"}</td>
                           <td style={{ padding: "10px 14px", color: COLORS.success }}>{c.taxe || "—"}</td>
                           <td style={{ padding: "10px 14px", color: COLORS.text }}>{c.date_texte || "—"}</td>
+                          {fertiFilter === "ajour" && (
+                            <td style={{ padding: "10px 14px", fontWeight: 700, color: COLORS.warning }}>{formatExpireDans(c)}</td>
+                          )}
                           <td style={{ padding: "10px 14px", color: COLORS.textMuted }}>{c.auteur || "—"}</td>
                           <td style={{ padding: "10px 14px", color: COLORS.textMuted, fontSize: 11 }}>
                             {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') + " " + new Date(c.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : "—"}
