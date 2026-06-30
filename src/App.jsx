@@ -75,8 +75,10 @@ export default function App() {
   const [contratsFerti, setContratsFerti] = useState([])
   const [fertiSearch, setFertiSearch] = useState("")
   const [fertiFilter, setFertiFilter] = useState("tous") // tous | ajour | expires
+  const [viewAsId, setViewAsId] = useState(null)
 
   const isAdmin = member?.name === "DUME"
+  const effectiveMember = viewAsId ? (members.find(m => m.id === viewAsId) || member) : member
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
@@ -184,14 +186,14 @@ export default function App() {
     loadData()
   }
 
-  const myScores = scores.find(s => s.member_id === member?.id && s.semaine_id === semaine?.id)
-  const mySalaire = salaires.find(s => s.member_id === member?.id)
-  const myActivities = activities.filter(a => a.member_id === member?.id).slice(0, 10)
-  const myVentes = activities.filter(a => a.member_id === member?.id && a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
+  const myScores = scores.find(s => s.member_id === effectiveMember?.id && s.semaine_id === semaine?.id)
+  const mySalaire = salaires.find(s => s.member_id === effectiveMember?.id)
+  const myActivities = activities.filter(a => a.member_id === effectiveMember?.id).slice(0, 10)
+  const myVentes = activities.filter(a => a.member_id === effectiveMember?.id && a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
   const totalVentes = activities.filter(a => a.type === "vente").reduce((sum, a) => sum + a.quantity, 0)
-  const myPlantations = activities.filter(a => a.member_id === member?.id && a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
+  const myPlantations = activities.filter(a => a.member_id === effectiveMember?.id && a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
   const totalPlantations = activities.filter(a => a.type === "Plantation").reduce((sum, a) => sum + a.quantity, 0)
-  const myActions = activities.filter(a => a.member_id === member?.id && ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
+  const myActions = activities.filter(a => a.member_id === effectiveMember?.id && ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
   const totalActions = activities.filter(a => ACTION_TYPES.includes(a.type)).reduce((sum, a) => sum + a.quantity, 0)
 
   const inp = (val, onChange, type = "text", placeholder = "") => (
@@ -307,6 +309,13 @@ export default function App() {
         {/* DASHBOARD */}
         {page === "dashboard" && (
           <div>
+            {/* BANDEAU VUE EN TANT QUE */}
+            {viewAsId && (
+              <div style={{ background: `${COLORS.warning}22`, border: `1px solid ${COLORS.warning}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>👁️ Vue en tant que <strong>{effectiveMember?.name}</strong></span>
+                <button onClick={() => setViewAsId(null)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.warning, color: "#0a1628", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Quitter</button>
+              </div>
+            )}
             {/* BANNIÈRE */}
             <div style={{ marginBottom: "1.5rem", borderRadius: 16, overflow: "hidden", border: `1px solid ${COLORS.border}` }}>
               <img src="/banniere.png" alt="Bannière" style={{ width: "100%", display: "block", maxHeight: 200, objectFit: "cover" }} />
@@ -315,7 +324,7 @@ export default function App() {
             {/* CLASSEMENT CENTRAL */}
             {(() => {
               const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
-              const rang = sorted.findIndex(s => s.member_id === member?.id) + 1
+              const rang = sorted.findIndex(s => s.member_id === effectiveMember?.id) + 1
               const total = sorted.length
               const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
               const rangColor = rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text
@@ -326,7 +335,7 @@ export default function App() {
                 if (a.type === "Plantation") plantParMembre[a.member_id] = (plantParMembre[a.member_id] || 0) + a.quantity
               })
               const sortedPlant = Object.entries(plantParMembre).sort((a, b) => b[1] - a[1])
-              const rangPlant = sortedPlant.findIndex(([id]) => parseInt(id) === member?.id) + 1
+              const rangPlant = sortedPlant.findIndex(([id]) => parseInt(id) === effectiveMember?.id) + 1
               const medalPlant = rangPlant === 1 ? "🥇" : rangPlant === 2 ? "🥈" : rangPlant === 3 ? "🥉" : null
 
               // Classement ventes
@@ -335,7 +344,7 @@ export default function App() {
                 if (a.type === "vente") venteParMembre[a.member_id] = (venteParMembre[a.member_id] || 0) + a.quantity
               })
               const sortedVente = Object.entries(venteParMembre).sort((a, b) => b[1] - a[1])
-              const rangVente = sortedVente.findIndex(([id]) => parseInt(id) === member?.id) + 1
+              const rangVente = sortedVente.findIndex(([id]) => parseInt(id) === effectiveMember?.id) + 1
               const medalVente = rangVente === 1 ? "🥇" : rangVente === 2 ? "🥈" : rangVente === 3 ? "🥉" : null
 
               const miniCard = (label, rang, medal, icon) => (
@@ -410,7 +419,7 @@ export default function App() {
                   { type: "Cambu", label: "CAMBU", cooldown: 3 },
                   { type: "Go fast", label: "GO FAST", cooldown: 24 }
                 ].map(({ type, label, cooldown }) => {
-                  const last = activities.filter(a => a.member_id === member?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+                  const last = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
                   const lastDate = last ? new Date(last.created_at) : null
                   const diffH = lastDate ? (new Date() - lastDate) / 3600000 : null
                   const available = !lastDate || diffH >= cooldown
@@ -523,8 +532,8 @@ export default function App() {
                 })
                 const maxPlant = Math.max(0, ...Object.values(plantParMembre))
                 const maxVente = Math.max(0, ...Object.values(venteParMembre))
-                const isMeilleurPlanteur = myPlantations > 0 && plantParMembre[member?.id] === maxPlant
-                const isMeilleurVendeur = myVentes > 0 && venteParMembre[member?.id] === maxVente
+                const isMeilleurPlanteur = myPlantations > 0 && plantParMembre[effectiveMember?.id] === maxPlant
+                const isMeilleurVendeur = myVentes > 0 && venteParMembre[effectiveMember?.id] === maxVente
 
                 // Colonnes de grades
                 const cols = [
@@ -541,7 +550,7 @@ export default function App() {
                     label: `💊 ${dp.drogue}`,
                     beneficeNet: (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0),
                     isMeilleurTop: isMeilleurVendeur,
-                    qty: activities.filter(a => a.member_id === member?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
+                    qty: activities.filter(a => a.member_id === effectiveMember?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
                   }))
                 ]
 
@@ -1020,6 +1029,23 @@ export default function App() {
         {page === "admin" && isAdmin && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
+
+            {/* VOIR EN TANT QUE */}
+            {card(<>
+              <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>👁️ Voir en tant que</h3>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                {sel(viewAsId || "", v => setViewAsId(v ? parseInt(v) : null),
+                  [<option key="" value="">-- Voir avec mon propre compte (DUME) --</option>,
+                   ...members.filter(m => m.name !== "DUME").sort((a,b) => a.name.localeCompare(b.name)).map(m => <option key={m.id} value={m.id}>{m.name} ({m.grade || "Charbon"})</option>)]
+                )}
+                {viewAsId && goldBtn("Réinitialiser", () => setViewAsId(null), { background: COLORS.danger, color: "#fff" })}
+              </div>
+              {viewAsId && (
+                <p style={{ color: COLORS.warning, fontSize: 13, marginTop: 10 }}>
+                  ⚠️ Tu vois actuellement le Tableau de bord comme s'il s'agissait de <strong>{members.find(m => m.id === viewAsId)?.name}</strong>. Clique sur "Tableau de bord" dans le menu pour voir sa vue.
+                </p>
+              )}
+            </>, { marginBottom: 16 })}
 
             {/* AJOUTER MEMBRE */}
             {card(<>
