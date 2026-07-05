@@ -74,7 +74,7 @@ export default function App() {
   const [pointsSaving, setPointsSaving] = useState(false)
   const [contratsFerti, setContratsFerti] = useState([])
   const [fertiSearch, setFertiSearch] = useState("")
-  const [fertiFilter, setFertiFilter] = useState("tous") // tous | ajour | expires
+  const [fertiFilter, setFertiFilter] = useState("tous")
   const [viewAsId, setViewAsId] = useState(null)
 
   const isAdmin = member?.name === "DUME"
@@ -154,8 +154,6 @@ export default function App() {
     if (!newMember.trim()) return setMessage("❌ Nom requis")
     if (!newMemberEmail.trim()) return setMessage("❌ Email requis")
     if (!newMemberPassword.trim() || newMemberPassword.length < 6) return setMessage("❌ Mot de passe requis (6 car. min)")
-
-    // 1. Créer le compte Auth via Edge Function
     const res = await fetch(EDGE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
@@ -163,13 +161,10 @@ export default function App() {
     })
     const data = await res.json()
     if (!res.ok || !data.user_id) return setMessage("❌ Erreur création compte : " + (data.error || "inconnue"))
-
-    // 2. Créer le membre avec l'UID lié
     const { error } = await supabase.from("members").insert([{
       name: newMember.toUpperCase(), active: true, email: newMemberEmail, grade: "Charbon", user_id: data.user_id
     }])
     if (error) return setMessage("❌ Erreur : " + error.message)
-
     setNewMember(""); setNewMemberEmail(""); setNewMemberPassword("")
     setMessage(`✅ Membre ${newMember.toUpperCase()} créé avec son compte !`)
     loadData()
@@ -309,56 +304,41 @@ export default function App() {
         {/* DASHBOARD */}
         {page === "dashboard" && (
           <div>
-            {/* BANDEAU VUE EN TANT QUE */}
             {viewAsId && (
               <div style={{ background: `${COLORS.warning}22`, border: `1px solid ${COLORS.warning}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>👁️ Vue en tant que <strong>{effectiveMember?.name}</strong></span>
                 <button onClick={() => setViewAsId(null)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: COLORS.warning, color: "#0a1628", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Quitter</button>
               </div>
             )}
-            {/* BANNIÈRE */}
             <div style={{ marginBottom: "1.5rem", borderRadius: 16, overflow: "hidden", border: `1px solid ${COLORS.border}` }}>
               <img src="/banniere.png" alt="Bannière" style={{ width: "100%", display: "block", maxHeight: 200, objectFit: "cover" }} />
             </div>
 
-            {/* CLASSEMENT CENTRAL */}
             {(() => {
               const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
               const rang = sorted.findIndex(s => s.member_id === effectiveMember?.id) + 1
               const total = sorted.length
               const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
               const rangColor = rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text
-
-              // Classement plantations
               const plantParMembre = {}
-              activities.forEach(a => {
-                if (a.type === "Plantation") plantParMembre[a.member_id] = (plantParMembre[a.member_id] || 0) + a.quantity
-              })
+              activities.forEach(a => { if (a.type === "Plantation") plantParMembre[a.member_id] = (plantParMembre[a.member_id] || 0) + a.quantity })
               const sortedPlant = Object.entries(plantParMembre).sort((a, b) => b[1] - a[1])
               const rangPlant = sortedPlant.findIndex(([id]) => parseInt(id) === effectiveMember?.id) + 1
               const medalPlant = rangPlant === 1 ? "🥇" : rangPlant === 2 ? "🥈" : rangPlant === 3 ? "🥉" : null
-
-              // Classement ventes
               const venteParMembre = {}
-              activities.forEach(a => {
-                if (a.type === "vente") venteParMembre[a.member_id] = (venteParMembre[a.member_id] || 0) + a.quantity
-              })
+              activities.forEach(a => { if (a.type === "vente") venteParMembre[a.member_id] = (venteParMembre[a.member_id] || 0) + a.quantity })
               const sortedVente = Object.entries(venteParMembre).sort((a, b) => b[1] - a[1])
               const rangVente = sortedVente.findIndex(([id]) => parseInt(id) === effectiveMember?.id) + 1
               const medalVente = rangVente === 1 ? "🥇" : rangVente === 2 ? "🥈" : rangVente === 3 ? "🥉" : null
-
               const miniCard = (label, rang, medal, icon) => (
-                <div style={{ background: `${COLORS.card}`, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "12px 20px", textAlign: "center", minWidth: 120 }}>
+                <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "12px 20px", textAlign: "center", minWidth: 120 }}>
                   <div style={{ fontSize: 10, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>{icon} {label}</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                     {medal && <span style={{ fontSize: 16 }}>{medal}</span>}
-                    <span style={{ fontSize: 24, fontWeight: 800, color: rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text }}>
-                      {rang > 0 ? `#${rang}` : "—"}
-                    </span>
+                    <span style={{ fontSize: 24, fontWeight: 800, color: rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text }}>{rang > 0 ? `#${rang}` : "—"}</span>
                   </div>
                 </div>
               )
-
               return (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: "2rem" }}>
                   {miniCard("Plantations", rangPlant, medalPlant, "🌿")}
@@ -410,6 +390,7 @@ export default function App() {
                 </div>
               </div>
             </div>
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               {card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Disponibilités actions</h3>
@@ -417,24 +398,39 @@ export default function App() {
                   { type: "Atm", label: "ATM", cooldown: 3 },
                   { type: "Apu", label: "APU", cooldown: 2 },
                   { type: "Cambu", label: "CAMBU", cooldown: 3 },
-                  { type: "Go fast", label: "GO FAST", cooldown: 24 }
+                  { type: "Go fast", label: "GO FAST", cooldown: 24 },
+                  { type: "Armu", label: "ARMU", cooldown: 168 },
+                  { type: "Fleeca", label: "FLEECA", cooldown: 168 }
                 ].map(({ type, label, cooldown }) => {
-                  const last = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+                  const lasts = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 2)
+                  const last = lasts[0]
                   const lastDate = last ? new Date(last.created_at) : null
                   const diffH = lastDate ? (new Date() - lastDate) / 3600000 : null
                   const available = !lastDate || diffH >= cooldown
                   const remaining = lastDate && !available ? cooldown - diffH : 0
+                  const formatRemaining = (h) => {
+                    if (h >= 24) return `${Math.floor(h/24)}j ${Math.floor(h%24)}h`
+                    return `${Math.floor(h)}h ${Math.floor((h - Math.floor(h)) * 60)}m`
+                  }
                   return (
                     <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>
-                        <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
-                          {lastDate ? `Dernière : ${lastDate.toLocaleDateString('fr-FR')} ${lastDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : "Jamais effectué"}
-                        </div>
+                        {lasts.length === 0
+                          ? <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>Jamais effectué</div>
+                          : lasts.map((l, i) => {
+                            const d = new Date(l.created_at)
+                            return (
+                              <div key={i} style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                                {i === 0 ? "Dernière" : "Avant"} : {d.toLocaleDateString('fr-FR')} {d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )
+                          })
+                        }
                       </div>
                       {available
                         ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
-                        : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {Math.floor(remaining)}h {Math.floor((remaining - Math.floor(remaining)) * 60)}m</span>
+                        : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</span>
                       }
                     </div>
                   )
@@ -463,11 +459,8 @@ export default function App() {
                     </div>
                   )
                 })}
-                {/* Total global */}
                 {(() => {
-                  const totalPct = Math.min(Math.round(
-                    ((myActions / quotas.actions) + (myPlantations / quotas.plantations) + (myVentes / quotas.ventes)) / 3 * 100
-                  ), 100)
+                  const totalPct = Math.min(Math.round(((myActions / quotas.actions) + (myPlantations / quotas.plantations) + (myVentes / quotas.ventes)) / 3 * 100), 100)
                   return (
                     <div style={{ marginTop: 8, paddingTop: 12, borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 12, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Accomplissement global</span>
@@ -477,6 +470,7 @@ export default function App() {
                 })()}
               </>)}
             </div>
+
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Dernières activités</h3>
               {myActivities.length === 0
@@ -514,16 +508,12 @@ export default function App() {
 
             <div style={{ marginBottom: 16 }} />
 
-            {/* BLOC INFOS PRIMES */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 14, textTransform: "uppercase" }}>📊 Infos — Primes de la semaine</h3>
               {(() => {
-                // Marge nette plantation par plantation
                 const coutPlant = (plantConfig.prix_graine ?? 0) + (plantConfig.prix_pot ?? 0)
                 const recettePlant = (plantConfig.nb_branches ?? 0) * (plantConfig.prix_branche_vente ?? 0)
                 const margeNetPlant = (recettePlant - coutPlant) * 0.70
-
-                // Meilleur planteur et vendeur
                 const plantParMembre = {}
                 const venteParMembre = {}
                 activities.forEach(a => {
@@ -534,28 +524,21 @@ export default function App() {
                 const maxVente = Math.max(0, ...Object.values(venteParMembre))
                 const isMeilleurPlanteur = myPlantations > 0 && plantParMembre[effectiveMember?.id] === maxPlant
                 const isMeilleurVendeur = myVentes > 0 && venteParMembre[effectiveMember?.id] === maxVente
-
-                // Colonnes de grades
                 const cols = [
                   { key: "charbon", label: "Charbon", pct: primeConfig.charbon, color: "#9ca3af" },
                   { key: "soldat", label: "Soldat", pct: primeConfig.soldat, color: COLORS.text },
                   { key: "haut_grade", label: "Haut gradé", pct: primeConfig.haut_grade, color: COLORS.gold },
                   { key: "meilleur", label: "Top 1 🏆", pct: primeConfig.meilleur, color: COLORS.success },
                 ]
-
-                // Lignes : plantation + drogues
                 const lignes = [
-                  { label: "🌿 Plantation", beneficeNet: margeNetPlant, isMeilleurTop: isMeilleurPlanteur, qty: myPlantations },
+                  { label: "🌿 Plantation", beneficeNet: margeNetPlant, qty: myPlantations },
                   ...drugPrices.map(dp => ({
                     label: `💊 ${dp.drogue}`,
                     beneficeNet: (dp.prix_vente ?? 0) - (dp.prix_achat ?? 0),
-                    isMeilleurTop: isMeilleurVendeur,
                     qty: activities.filter(a => a.member_id === effectiveMember?.id && a.type === "vente" && a.drogue === dp.drogue).reduce((s, a) => s + a.quantity, 0)
                   }))
                 ]
-
                 const thStyle = { padding: "9px 12px", textAlign: "center", color: COLORS.gold, fontWeight: 600, fontSize: 12, borderBottom: `1px solid ${COLORS.border}`, textTransform: "uppercase", letterSpacing: "0.05em" }
-
                 return (
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
@@ -574,7 +557,6 @@ export default function App() {
                           <tr key={l.label} style={{ background: bg, borderBottom: `1px solid ${COLORS.border}` }}>
                             <td style={{ padding: "9px 12px", fontWeight: 600, color: isPlant ? "#4ade80" : COLORS.text }}>{l.label}</td>
                             {cols.map(c => {
-                              const prime = l.beneficeNet > 0 ? Math.round(l.qty * l.beneficeNet * (c.pct / 100)) : 0
                               const primeUnit = l.beneficeNet > 0 ? Math.round(l.beneficeNet * (c.pct / 100)) : 0
                               return (
                                 <td key={c.key} style={{ padding: "9px 12px", textAlign: "center" }}>
@@ -616,7 +598,6 @@ export default function App() {
                 </thead>
                 <tbody>
                   {scores.filter(s => s.semaine_id === semaine?.id).sort((a,b) => b.points - a.points).map((s, i) => {
-                    // Calcul quotas pour ce membre
                     const mActs = (s.cambu||0)+(s.atm||0)+(s.apu||0)+(s.go_fast||0)
                     const pctA = quotas.actions > 0 ? Math.min((mActs / quotas.actions) * 100, 100) : 0
                     const pctP = quotas.plantations > 0 ? Math.min(((s.plantation||0) / quotas.plantations) * 100, 100) : 0
@@ -624,34 +605,33 @@ export default function App() {
                     const pctTotal = Math.round((pctA + pctP + pctV) / 3)
                     const pctColor = pctTotal >= 100 ? COLORS.success : pctTotal >= 50 ? COLORS.warning : COLORS.danger
                     return (
-                    <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-                      <td style={{ padding: "12px 10px" }}>{i < 3 ? MEDALS[i] : `#${i+1}`}</td>
-                      <td style={{ padding: "12px 10px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: COLORS.gold }}>{s.points}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.plantation}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.vente}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.cambu}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.atm}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.apu}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.go_fast}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center", color: s.prison > 0 ? COLORS.danger : COLORS.text }}>{s.prison}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.armu}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.fleeca}</td>
-                      <td style={{ padding: "12px 10px", textAlign: "center" }}>
-                        <span style={{ fontWeight: 700, color: pctColor, fontSize: 13 }}>{pctTotal}%</span>
-                      </td>
-                    </tr>
-                  )})}
+                      <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                        <td style={{ padding: "12px 10px" }}>{i < 3 ? MEDALS[i] : `#${i+1}`}</td>
+                        <td style={{ padding: "12px 10px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: COLORS.gold }}>{s.points}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.plantation}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.vente}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.cambu}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.atm}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.apu}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.go_fast}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center", color: s.prison > 0 ? COLORS.danger : COLORS.text }}>{s.prison}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.armu}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.fleeca}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>
+                          <span style={{ fontWeight: 700, color: pctColor, fontSize: 13 }}>{pctTotal}%</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
-            {/* BLOC CHAMPIONS */}
             <div style={{ marginTop: 24 }}>
               {(() => {
                 const sem = scores.filter(s => s.semaine_id === semaine?.id)
                 if (sem.length === 0) return null
-
                 const best = (key) => sem.reduce((a, b) => (b[key] ?? 0) > (a[key] ?? 0) ? b : a, sem[0])
                 const bestActions = sem.reduce((a, b) => {
                   const ta = (a.cambu||0)+(a.atm||0)+(a.apu||0)+(a.go_fast||0)+(a.fleeca||0)+(a.armu||0)
@@ -659,14 +639,10 @@ export default function App() {
                   return tb > ta ? b : a
                 }, sem[0])
                 const totalActionsB = (bestActions.cambu||0)+(bestActions.atm||0)+(bestActions.apu||0)+(bestActions.go_fast||0)+(bestActions.fleeca||0)+(bestActions.armu||0)
-
-                // Meilleur salaire depuis la vue salaires
                 const bestSalaire = salaires.filter(s => s.semaine_id === semaine?.id).reduce((a, b) => (b.salaire_total ?? 0) > (a.salaire_total ?? 0) ? b : a, salaires[0] || {})
-
                 const champVente = best("vente")
                 const champPlant = best("plantation")
                 const champPrison = best("prison")
-
                 const trophies = [
                   { icon: "💊", title: "Champion des Ventes", name: champVente?.member_name, value: `${champVente?.vente ?? 0} ventes`, color: "#f472b6" },
                   { icon: "🌿", title: "Roi du Jardin", name: champPlant?.member_name, value: `${champPlant?.plantation ?? 0} plantations`, color: "#4ade80" },
@@ -674,7 +650,6 @@ export default function App() {
                   { icon: "⛓️", title: "Légende du Placard", name: champPrison?.member_name, value: `${champPrison?.prison ?? 0} prisons`, color: COLORS.danger },
                   { icon: "💰", title: "Le plus Payé", name: bestSalaire?.member_name, value: `${Math.round(bestSalaire?.salaire_total ?? 0).toLocaleString()} $`, color: COLORS.success },
                 ]
-
                 return (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
                     {trophies.map(t => (
@@ -698,6 +673,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* SALAIRES */}
         {page === "salaires" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
@@ -785,10 +762,7 @@ export default function App() {
                 "Commandant": "#6b7fa3", "Lieutenant": "#8899bb", "Soldat d'élite": "#aab0c0",
                 "Soldat": COLORS.textMuted, "Charbon": "#555"
               }
-              const gradeIcons = {
-                "Chef":"👑","Capo":"👑","Sous Capo":"🥈","Commandant":"⭐",
-                "Lieutenant":"🎖️","Soldat d'élite":"🗡️","Soldat":"⚔️","Charbon":"🪨"
-              }
+              const gradeIcons = { "Chef":"👑","Capo":"👑","Sous Capo":"🥈","Commandant":"⭐","Lieutenant":"🎖️","Soldat d'élite":"🗡️","Soldat":"⚔️","Charbon":"🪨" }
               return gradeOrder.map(grade => {
                 const list = members.filter(m => (m.grade || "Charbon") === grade)
                 if (list.length === 0) return null
@@ -874,44 +848,31 @@ export default function App() {
         {page === "contrats" && (
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Contrats</h2>
-
-            {/* Sous-onglets */}
             <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem" }}>
               {["Ferti"].map(tab => (
-                <button key={tab} style={{
-                  padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
-                  background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#0a1628"
-                }}>{tab}</button>
+                <button key={tab} style={{ padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})`, color: "#0a1628" }}>{tab}</button>
               ))}
             </div>
-
-            {/* PAGE FERTI */}
             {card(<>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>🌿 Contrats Fertilisant</h3>
                   {(() => {
-                    // Extrait toutes les dates DD/MM(/YYYY) du texte, prend la dernière comme date de fin (23h59)
                     const getDateFin = (texte) => {
                       if (!texte) return null
                       const regex = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/g
                       const matches = [...texte.matchAll(regex)]
                       if (matches.length === 0) return null
                       const last = matches[matches.length - 1]
-                      const day = parseInt(last[1])
-                      const month = parseInt(last[2]) - 1
+                      const day = parseInt(last[1]), month = parseInt(last[2]) - 1
                       let year = last[3] ? parseInt(last[3]) : new Date().getFullYear()
                       if (year < 100) year += 2000
                       const d = new Date(year, month, day, 23, 59, 59)
                       return isNaN(d.getTime()) ? null : d
                     }
-                    // Groupes uniques (dernier contrat par groupe)
                     const groupesUniques = [...new Map(contratsFerti.map(c => [c.groupe?.toLowerCase(), c])).values()]
                     const now = new Date()
-                    const aJour = groupesUniques.filter(c => {
-                      const fin = getDateFin(c.date_texte)
-                      return fin && fin >= now
-                    })
+                    const aJour = groupesUniques.filter(c => { const fin = getDateFin(c.date_texte); return fin && fin >= now })
                     return (
                       <div style={{ display: "flex", gap: 12 }}>
                         <div onClick={() => setFertiFilter("tous")} style={{ background: fertiFilter === "tous" ? COLORS.blue : `${COLORS.blue}44`, borderRadius: 8, padding: "6px 14px", fontSize: 13, cursor: "pointer", border: fertiFilter === "tous" ? `1px solid ${COLORS.gold}` : `1px solid transparent` }}>
@@ -930,13 +891,8 @@ export default function App() {
                     )
                   })()}
                 </div>
-                <input
-                  type="text"
-                  placeholder="Rechercher groupe, MDP, taxe, date..."
-                  value={fertiSearch}
-                  onChange={e => setFertiSearch(e.target.value)}
-                  style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 13, width: 300 }}
-                />
+                <input type="text" placeholder="Rechercher groupe, MDP, taxe, date..." value={fertiSearch} onChange={e => setFertiSearch(e.target.value)}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 13, width: 300 }} />
               </div>
               {(() => {
                 const getDateFin = (texte) => {
@@ -945,42 +901,26 @@ export default function App() {
                   const matches = [...texte.matchAll(regex)]
                   if (matches.length === 0) return null
                   const last = matches[matches.length - 1]
-                  const day = parseInt(last[1])
-                  const month = parseInt(last[2]) - 1
+                  const day = parseInt(last[1]), month = parseInt(last[2]) - 1
                   let year = last[3] ? parseInt(last[3]) : new Date().getFullYear()
                   if (year < 100) year += 2000
                   const d = new Date(year, month, day, 23, 59, 59)
                   return isNaN(d.getTime()) ? null : d
                 }
                 const now = new Date()
-                const isAJour = (c) => {
-                  const fin = getDateFin(c.date_texte)
-                  return fin && fin >= now
-                }
+                const isAJour = (c) => { const fin = getDateFin(c.date_texte); return fin && fin >= now }
                 const formatExpireDans = (c) => {
                   const fin = getDateFin(c.date_texte)
                   if (!fin) return "—"
                   const diffMs = fin - now
                   if (diffMs <= 0) return "Expiré"
                   const diffH = diffMs / 3600000
-                  if (diffH < 24) {
-                    const h = Math.floor(diffH)
-                    const m = Math.floor((diffH - h) * 60)
-                    return `${h}h ${m}m`
-                  }
-                  const diffJ = Math.floor(diffH / 24)
-                  const remH = Math.floor(diffH % 24)
-                  return `${diffJ}j ${remH}h`
+                  if (diffH < 24) { const h = Math.floor(diffH), m = Math.floor((diffH - h) * 60); return `${h}h ${m}m` }
+                  return `${Math.floor(diffH / 24)}j ${Math.floor(diffH % 24)}h`
                 }
                 const filtered = contratsFerti.filter(c => {
                   const q = fertiSearch.toLowerCase()
-                  const matchSearch = !q || (
-                    (c.groupe || "").toLowerCase().includes(q) ||
-                    (c.mdp || "").toLowerCase().includes(q) ||
-                    (c.taxe || "").toLowerCase().includes(q) ||
-                    (c.date_texte || "").toLowerCase().includes(q) ||
-                    (c.auteur || "").toLowerCase().includes(q)
-                  )
+                  const matchSearch = !q || ((c.groupe||"").toLowerCase().includes(q) || (c.mdp||"").toLowerCase().includes(q) || (c.taxe||"").toLowerCase().includes(q) || (c.date_texte||"").toLowerCase().includes(q) || (c.auteur||"").toLowerCase().includes(q))
                   const matchFilter = fertiFilter === "tous" || (fertiFilter === "ajour" && isAJour(c)) || (fertiFilter === "expires" && !isAJour(c))
                   return matchSearch && matchFilter
                 })
@@ -989,7 +929,7 @@ export default function App() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: COLORS.blue }}>
-                        {(fertiFilter === "ajour" ? ["Groupe", "MDP", "Taxe", "Date", "Expire dans", "Posté par", "Le"] : ["Groupe", "MDP", "Taxe", "Date", "Posté par", "Le"]).map(h => (
+                        {(fertiFilter === "ajour" ? ["Groupe","MDP","Taxe","Date","Expire dans","Posté par","Le"] : ["Groupe","MDP","Taxe","Date","Posté par","Le"]).map(h => (
                           <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}`, fontSize: 12, textTransform: "uppercase" }}>{h}</th>
                         ))}
                       </tr>
@@ -1001,9 +941,7 @@ export default function App() {
                           <td style={{ padding: "10px 14px", fontFamily: "monospace", color: "#60a5fa" }}>{c.mdp || "—"}</td>
                           <td style={{ padding: "10px 14px", color: COLORS.success }}>{c.taxe || "—"}</td>
                           <td style={{ padding: "10px 14px", color: COLORS.text }}>{c.date_texte || "—"}</td>
-                          {fertiFilter === "ajour" && (
-                            <td style={{ padding: "10px 14px", fontWeight: 700, color: COLORS.warning }}>{formatExpireDans(c)}</td>
-                          )}
+                          {fertiFilter === "ajour" && <td style={{ padding: "10px 14px", fontWeight: 700, color: COLORS.warning }}>{formatExpireDans(c)}</td>}
                           <td style={{ padding: "10px 14px", color: COLORS.textMuted }}>{c.auteur || "—"}</td>
                           <td style={{ padding: "10px 14px", color: COLORS.textMuted, fontSize: 11 }}>
                             {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') + " " + new Date(c.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : "—"}
@@ -1057,7 +995,6 @@ export default function App() {
           <div>
             <h2 style={{ color: COLORS.gold, marginBottom: "1.5rem" }}>Administration</h2>
 
-            {/* VOIR EN TANT QUE */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>👁️ Voir en tant que</h3>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -1069,12 +1006,11 @@ export default function App() {
               </div>
               {viewAsId && (
                 <p style={{ color: COLORS.warning, fontSize: 13, marginTop: 10 }}>
-                  ⚠️ Tu vois actuellement le Tableau de bord comme s'il s'agissait de <strong>{members.find(m => m.id === viewAsId)?.name}</strong>. Clique sur "Tableau de bord" dans le menu pour voir sa vue.
+                  ⚠️ Vue active pour <strong>{members.find(m => m.id === viewAsId)?.name}</strong>. Clique sur "Tableau de bord" pour voir sa vue.
                 </p>
               )}
             </>, { marginBottom: 16 })}
 
-            {/* AJOUTER MEMBRE */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Ajouter un membre</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
@@ -1095,7 +1031,6 @@ export default function App() {
               {message && <p style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, marginTop: 10, fontSize: 13 }}>{message}</p>}
             </>, { marginBottom: 16 })}
 
-            {/* GÉRER MEMBRES */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Gérer les membres</h3>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -1141,7 +1076,6 @@ export default function App() {
               </table>
             </>, { marginBottom: 16 })}
 
-            {/* QUOTAS */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Quotas de la semaine</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
@@ -1155,23 +1089,17 @@ export default function App() {
               </div>
               {goldBtn("Sauvegarder", async () => {
                 await supabase.from("quotas").update({ actions: quotas.actions, plantations: quotas.plantations, ventes: quotas.ventes }).eq("id", 1)
-                setMessage("✅ Quotas mis à jour !")
-                setTimeout(() => setMessage(""), 3000)
+                setMessage("✅ Quotas mis à jour !"); setTimeout(() => setMessage(""), 3000)
               })}
               {message && <p style={{ color: COLORS.success, marginTop: 10, fontSize: 13 }}>{message}</p>}
             </>, { marginBottom: 16 })}
 
-            {/* PRIX DES DROGUES */}
             {card(<>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <h3 style={{ color: COLORS.gold, margin: 0, fontSize: 14, textTransform: "uppercase" }}>💊 Prix des drogues</h3>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input
-                    type="text"
-                    placeholder="Nom de la drogue..."
-                    id="new-drogue-input"
-                    style={{ padding: "7px 12px", borderRadius: 7, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 13, width: 200 }}
-                  />
+                  <input type="text" placeholder="Nom de la drogue..." id="new-drogue-input"
+                    style={{ padding: "7px 12px", borderRadius: 7, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, fontSize: 13, width: 200 }} />
                   {goldBtn("+ Ajouter", async () => {
                     const input = document.getElementById("new-drogue-input")
                     const nom = input.value.trim().toUpperCase()
@@ -1179,18 +1107,17 @@ export default function App() {
                     if (drugPrices.find(d => d.drogue === nom)) return alert("❌ Cette drogue existe déjà.")
                     const { error } = await supabase.from("drug_prices").insert([{ drogue: nom, prix_achat: 0, prix_vente: 0 }])
                     if (error) return alert("❌ Erreur : " + error.message)
-                    input.value = ""
-                    loadData()
+                    input.value = ""; loadData()
                   }, { padding: "7px 14px", fontSize: 13 })}
                 </div>
               </div>
               {drugPrices.length === 0
-                ? <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Aucune drogue trouvée. Exécute le SQL d'initialisation dans Supabase.</p>
+                ? <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Aucune drogue trouvée.</p>
                 : <>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: COLORS.blue }}>
-                        {["Drogue", "Prix d'achat ($)", "Prix de vente ($)", "Marge", ""].map(h => (
+                        {["Drogue","Prix d'achat ($)","Prix de vente ($)","Marge",""].map(h => (
                           <th key={h} style={{ padding: "10px 14px", textAlign: h === "Drogue" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                         ))}
                       </tr>
@@ -1202,26 +1129,14 @@ export default function App() {
                           <tr key={dp.drogue} style={{ background: i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
                             <td style={{ padding: "10px 14px", fontWeight: 600, color: COLORS.gold }}>{dp.drogue}</td>
                             <td style={{ padding: "10px 14px", textAlign: "center" }}>
-                              <input
-                                type="number"
-                                min="0"
-                                value={dp.prix_achat ?? 0}
-                                onChange={e => setDrugPrices(drugPrices.map(d =>
-                                  d.drogue === dp.drogue ? { ...d, prix_achat: parseFloat(e.target.value) || 0 } : d
-                                ))}
-                                style={{ width: 120, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }}
-                              />
+                              <input type="number" min="0" value={dp.prix_achat ?? 0}
+                                onChange={e => setDrugPrices(drugPrices.map(d => d.drogue === dp.drogue ? { ...d, prix_achat: parseFloat(e.target.value) || 0 } : d))}
+                                style={{ width: 120, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }} />
                             </td>
                             <td style={{ padding: "10px 14px", textAlign: "center" }}>
-                              <input
-                                type="number"
-                                min="0"
-                                value={dp.prix_vente ?? 0}
-                                onChange={e => setDrugPrices(drugPrices.map(d =>
-                                  d.drogue === dp.drogue ? { ...d, prix_vente: parseFloat(e.target.value) || 0 } : d
-                                ))}
-                                style={{ width: 120, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }}
-                              />
+                              <input type="number" min="0" value={dp.prix_vente ?? 0}
+                                onChange={e => setDrugPrices(drugPrices.map(d => d.drogue === dp.drogue ? { ...d, prix_vente: parseFloat(e.target.value) || 0 } : d))}
+                                style={{ width: 120, padding: "6px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, textAlign: "center", fontSize: 13 }} />
                             </td>
                             <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: marge > 0 ? COLORS.success : marge < 0 ? COLORS.danger : COLORS.textMuted }}>
                               {marge > 0 ? "+" : ""}{marge.toLocaleString()} $
@@ -1229,8 +1144,7 @@ export default function App() {
                             <td style={{ padding: "10px 14px", textAlign: "center" }}>
                               <button onClick={async () => {
                                 if (!confirm(`Supprimer ${dp.drogue} ?`)) return
-                                await supabase.from("drug_prices").delete().eq("drogue", dp.drogue)
-                                loadData()
+                                await supabase.from("drug_prices").delete().eq("drogue", dp.drogue); loadData()
                               }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: COLORS.danger, color: "#fff", cursor: "pointer", fontSize: 12 }}>✕</button>
                             </td>
                           </tr>
@@ -1242,14 +1156,9 @@ export default function App() {
                     {goldBtn(drugPricesSaving ? "Sauvegarde..." : "💾 Sauvegarder les prix", async () => {
                       setDrugPricesSaving(true)
                       for (const dp of drugPrices) {
-                        await supabase.from("drug_prices").upsert(
-                          { drogue: dp.drogue, prix_achat: dp.prix_achat ?? 0, prix_vente: dp.prix_vente ?? 0, updated_at: new Date().toISOString() },
-                          { onConflict: "drogue" }
-                        )
+                        await supabase.from("drug_prices").upsert({ drogue: dp.drogue, prix_achat: dp.prix_achat ?? 0, prix_vente: dp.prix_vente ?? 0, updated_at: new Date().toISOString() }, { onConflict: "drogue" })
                       }
-                      setDrugPricesSaving(false)
-                      setMessage("✅ Prix mis à jour !")
-                      setTimeout(() => setMessage(""), 3000)
+                      setDrugPricesSaving(false); setMessage("✅ Prix mis à jour !"); setTimeout(() => setMessage(""), 3000)
                     }, { opacity: drugPricesSaving ? 0.6 : 1 })}
                     {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
                   </div>
@@ -1257,20 +1166,13 @@ export default function App() {
               }
             </>, { marginBottom: 16 })}
 
-            {/* PLANTATION CONFIG */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 20, fontSize: 14, textTransform: "uppercase" }}>🌿 Configuration plantation</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-                {[
-                  { key: "prix_graine", label: "Prix graine ($)" },
-                  { key: "prix_pot", label: "Prix pot ($)" },
-                  { key: "nb_branches", label: "Nb branches / plantation" },
-                  { key: "prix_branche_vente", label: "Prix vente branche ($)" },
-                ].map(({ key, label }) => (
+                {[{ key: "prix_graine", label: "Prix graine ($)" }, { key: "prix_pot", label: "Prix pot ($)" }, { key: "nb_branches", label: "Nb branches / plantation" }, { key: "prix_branche_vente", label: "Prix vente branche ($)" }].map(({ key, label }) => (
                   <div key={key}>
                     <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
-                    <input type="number" min="0" value={plantConfig[key] ?? 0}
-                      onChange={e => setPlantConfig({ ...plantConfig, [key]: parseFloat(e.target.value) || 0 })}
+                    <input type="number" min="0" value={plantConfig[key] ?? 0} onChange={e => setPlantConfig({ ...plantConfig, [key]: parseFloat(e.target.value) || 0 })}
                       style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
                   </div>
                 ))}
@@ -1299,22 +1201,13 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {goldBtn(plantSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
                   setPlantSaving(true)
-                  await supabase.from("plantation_config").update({
-                    prix_graine: plantConfig.prix_graine,
-                    prix_pot: plantConfig.prix_pot,
-                    nb_branches: plantConfig.nb_branches,
-                    prix_branche_vente: plantConfig.prix_branche_vente,
-                    updated_at: new Date().toISOString()
-                  }).eq("id", 1)
-                  setPlantSaving(false)
-                  setMessage("✅ Configuration plantation sauvegardée !")
-                  setTimeout(() => setMessage(""), 3000)
+                  await supabase.from("plantation_config").update({ prix_graine: plantConfig.prix_graine, prix_pot: plantConfig.prix_pot, nb_branches: plantConfig.nb_branches, prix_branche_vente: plantConfig.prix_branche_vente, updated_at: new Date().toISOString() }).eq("id", 1)
+                  setPlantSaving(false); setMessage("✅ Configuration plantation sauvegardée !"); setTimeout(() => setMessage(""), 3000)
                 }, { opacity: plantSaving ? 0.6 : 1 })}
                 {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
               </div>
             </>, { marginBottom: 16 })}
 
-            {/* PRIMES CONFIG */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 20, fontSize: 14, textTransform: "uppercase" }}>🏆 Pourcentages de prime</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
@@ -1327,8 +1220,7 @@ export default function App() {
                   <div key={key}>
                     <label style={{ display: "block", marginBottom: 4, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
                     <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 6 }}>{desc}</div>
-                    <input type="number" min="0" max="100" value={primeConfig[key] ?? 0}
-                      onChange={e => setPrimeConfig({ ...primeConfig, [key]: parseFloat(e.target.value) || 0 })}
+                    <input type="number" min="0" max="100" value={primeConfig[key] ?? 0} onChange={e => setPrimeConfig({ ...primeConfig, [key]: parseFloat(e.target.value) || 0 })}
                       style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
                   </div>
                 ))}
@@ -1336,38 +1228,24 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {goldBtn(primeSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
                   setPrimeSaving(true)
-                  await supabase.from("prime_config").update({
-                    charbon: primeConfig.charbon, soldat: primeConfig.soldat,
-                    haut_grade: primeConfig.haut_grade, meilleur: primeConfig.meilleur,
-                    updated_at: new Date().toISOString()
-                  }).eq("id", 1)
-                  setPrimeSaving(false)
-                  setMessage("✅ Primes mises à jour !")
-                  setTimeout(() => setMessage(""), 3000)
+                  await supabase.from("prime_config").update({ charbon: primeConfig.charbon, soldat: primeConfig.soldat, haut_grade: primeConfig.haut_grade, meilleur: primeConfig.meilleur, updated_at: new Date().toISOString() }).eq("id", 1)
+                  setPrimeSaving(false); setMessage("✅ Primes mises à jour !"); setTimeout(() => setMessage(""), 3000)
                 }, { opacity: primeSaving ? 0.6 : 1 })}
                 {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
               </div>
             </>, { marginBottom: 16 })}
 
-            {/* POINTS CONFIG */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 20, fontSize: 14, textTransform: "uppercase" }}>⭐ Points par activité</h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 14 }}>
                 {[
-                  { key: "plantation", label: "🌿 Plantation" },
-                  { key: "vente", label: "💊 Vente" },
-                  { key: "cambu", label: "🏠 Cambu" },
-                  { key: "atm", label: "🏧 ATM" },
-                  { key: "apu", label: "🚔 APU" },
-                  { key: "go_fast", label: "🚗 Go fast" },
-                  { key: "prison", label: "⛓️ Prison" },
-                  { key: "armu", label: "🚛 Armu" },
-                  { key: "fleeca", label: "🏦 Fleeca" },
+                  { key: "plantation", label: "🌿 Plantation" }, { key: "vente", label: "💊 Vente" }, { key: "cambu", label: "🏠 Cambu" },
+                  { key: "atm", label: "🏧 ATM" }, { key: "apu", label: "🚔 APU" }, { key: "go_fast", label: "🚗 Go fast" },
+                  { key: "prison", label: "⛓️ Prison" }, { key: "armu", label: "🚛 Armu" }, { key: "fleeca", label: "🏦 Fleeca" },
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
-                    <input type="number" value={pointsConfig[key] ?? 0}
-                      onChange={e => setPointsConfig({ ...pointsConfig, [key]: parseFloat(e.target.value) || 0 })}
+                    <input type="number" value={pointsConfig[key] ?? 0} onChange={e => setPointsConfig({ ...pointsConfig, [key]: parseFloat(e.target.value) || 0 })}
                       style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: key === "prison" ? COLORS.danger : COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
                   </div>
                 ))}
@@ -1375,22 +1253,13 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {goldBtn(pointsSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
                   setPointsSaving(true)
-                  await supabase.from("points_config").update({
-                    plantation: pointsConfig.plantation, vente: pointsConfig.vente,
-                    cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu,
-                    go_fast: pointsConfig.go_fast, prison: pointsConfig.prison,
-                    armu: pointsConfig.armu, fleeca: pointsConfig.fleeca,
-                    updated_at: new Date().toISOString()
-                  }).eq("id", 1)
-                  setPointsSaving(false)
-                  setMessage("✅ Points mis à jour !")
-                  setTimeout(() => setMessage(""), 3000)
+                  await supabase.from("points_config").update({ plantation: pointsConfig.plantation, vente: pointsConfig.vente, cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu, go_fast: pointsConfig.go_fast, prison: pointsConfig.prison, armu: pointsConfig.armu, fleeca: pointsConfig.fleeca, updated_at: new Date().toISOString() }).eq("id", 1)
+                  setPointsSaving(false); setMessage("✅ Points mis à jour !"); setTimeout(() => setMessage(""), 3000)
                 }, { opacity: pointsSaving ? 0.6 : 1 })}
                 {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
               </div>
             </>, { marginBottom: 16 })}
 
-            {/* CRÉER SEMAINE */}
             {card(<>
               <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>Créer une semaine</h3>
               <p style={{ color: COLORS.textMuted, fontSize: 13 }}>Les semaines vont du dimanche 19h au dimanche 19h suivant.</p>
