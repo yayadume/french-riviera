@@ -116,8 +116,10 @@ export default function App() {
     const { data: sc24 } = await supabase.from("stock_coffre_24").select("*")
     const { data: sc129 } = await supabase.from("stock_coffre_129").select("*")
     const { data: scv1 } = await supabase.from("stock_coffre_villa1").select("*")
-    const { data: scv2 } = await supabase.from("stock_coffre_villa2").select("*")
-    setStockCamera([...(sc || []), ...(sc24 || []), ...(sc60 || []), ...(sc118 || []), ...(sc129 || []), ...(scv1 || []), ...(scv2 || [])])
+    const { data: sc77 } = await supabase.from("stock_coffre_77").select("*")
+    const { data: sc79 } = await supabase.from("stock_coffre_79").select("*")
+    const { data: sc95 } = await supabase.from("stock_coffre_95").select("*")
+    setStockCamera([...(sc || []), ...(sc24 || []), ...(sc60 || []), ...(sc118 || []), ...(sc129 || []), ...(scv1 || []), ...(sc77 || []), ...(sc79 || []), ...(sc95 || [])])
     const { data: q } = await supabase.from("quotas").select("*").single()
     if (q) setQuotas(q)
     const { data: dp } = await supabase.from("drug_prices").select("*").order("drogue")
@@ -963,10 +965,12 @@ export default function App() {
             {[
               { key: "Coffre 24", label: "24" },
               { key: "Coffre 60", label: "60" },
+              { key: "Coffre 77", label: "77" },
+              { key: "Coffre 79", label: "79" },
+              { key: "Coffre 95", label: "95" },
               { key: "Coffre 118", label: "118" },
               { key: "Coffre 129", label: "129" },
               { key: "Villa 1", label: "Villa 1" },
-              { key: "Villa 2", label: "Villa 2" },
             ].map(({ key, label }) => (
               card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 14, fontSize: 14, textTransform: "uppercase" }}>📦 Coffre {label}</h3>
