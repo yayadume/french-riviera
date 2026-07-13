@@ -467,47 +467,67 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               {card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Disponibilités actions</h3>
-                {[
-                  { type: "Atm", label: "ATM", cooldown: 3 },
-                  { type: "Apu", label: "APU", cooldown: 2 },
-                  { type: "Cambu", label: "CAMBU", cooldown: 3 },
-                  { type: "Go fast", label: "GO FAST", cooldown: 24 },
-                  { type: "Armu", label: "ARMU", cooldown: 168 },
-                  { type: "Fleeca", label: "FLEECA", cooldown: 168 }
-                ].map(({ type, label, cooldown }) => {
-                  const lasts = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 2)
-                  const last = lasts[0]
-                  const lastDate = last ? new Date(last.created_at) : null
-                  const diffH = lastDate ? (new Date() - lastDate) / 3600000 : null
-                  const available = !lastDate || diffH >= cooldown
-                  const remaining = lastDate && !available ? cooldown - diffH : 0
+                {(() => {
+                  // Date de début de la semaine active = disponibilité Armu/Fleeca pour tous
+                  const debutSemaine = semaine?.debut ? new Date(semaine.debut) : null
+                  const now = new Date()
                   const formatRemaining = (h) => {
                     if (h >= 24) return `${Math.floor(h/24)}j ${Math.floor(h%24)}h`
                     return `${Math.floor(h)}h ${Math.floor((h - Math.floor(h)) * 60)}m`
                   }
-                  return (
-                    <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>
-                        {lasts.length === 0
-                          ? <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>Jamais effectué</div>
-                          : lasts.map((l, i) => {
-                            const d = new Date(l.created_at)
-                            return (
-                              <div key={i} style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
-                                {i === 0 ? "Dernière" : "Avant"} : {d.toLocaleDateString('fr-FR')} {d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            )
-                          })
+                  return [
+                    { type: "Atm", label: "ATM", cooldown: 3, semaine: false },
+                    { type: "Apu", label: "APU", cooldown: 2, semaine: false },
+                    { type: "Cambu", label: "CAMBU", cooldown: 3, semaine: false },
+                    { type: "Go fast", label: "GO FAST", cooldown: 24, semaine: false },
+                    { type: "Armu", label: "ARMU", cooldown: 168, semaine: true },
+                    { type: "Fleeca", label: "FLEECA", cooldown: 168, semaine: true }
+                  ].map(({ type, label, cooldown, semaine: bySemaine }) => {
+                    const lasts = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 2)
+                    const last = lasts[0]
+                    const lastDate = last ? new Date(last.created_at) : null
+
+                    let available, remaining
+                    if (bySemaine) {
+                      // Dispo si aucune action cette semaine (après le début de semaine)
+                      const faitCetteSemaine = debutSemaine && lastDate && lastDate >= debutSemaine
+                      available = !faitCetteSemaine
+                      if (!available && debutSemaine) {
+                        const prochaineDispo = new Date(debutSemaine.getTime() + 7 * 24 * 3600000)
+                        remaining = (prochaineDispo - now) / 3600000
+                      } else {
+                        remaining = 0
+                      }
+                    } else {
+                      const diffH = lastDate ? (now - lastDate) / 3600000 : null
+                      available = !lastDate || diffH >= cooldown
+                      remaining = lastDate && !available ? cooldown - diffH : 0
+                    }
+
+                    return (
+                      <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{label} {bySemaine && <span style={{ fontSize: 10, color: COLORS.textMuted, fontWeight: 400 }}>(1/semaine)</span>}</div>
+                          {lasts.length === 0
+                            ? <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>Jamais effectué</div>
+                            : lasts.map((l, i) => {
+                              const d = new Date(l.created_at)
+                              return (
+                                <div key={i} style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
+                                  {i === 0 ? "Dernière" : "Avant"} : {d.toLocaleDateString('fr-FR')} {d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              )
+                            })
+                          }
+                        </div>
+                        {available
+                          ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
+                          : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</span>
                         }
                       </div>
-                      {available
-                        ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
-                        : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</span>
-                      }
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
               </>)}
               {card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Quotas de la semaine</h3>
