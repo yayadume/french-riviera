@@ -78,6 +78,7 @@ export default function App() {
   const [viewAsId, setViewAsId] = useState(null)
   const [allScores, setAllScores] = useState([])
   const [allSalaires, setAllSalaires] = useState([])
+  const [allArmuFleeca, setAllArmuFleeca] = useState([])
 
   const isAdmin = member?.name === "DUME"
   const effectiveMember = viewAsId ? (members.find(m => m.id === viewAsId) || member) : member
@@ -138,6 +139,8 @@ export default function App() {
     setAllScores(as || [])
     const { data: asal } = await supabase.from("salaires").select("*")
     setAllSalaires(asal || [])
+    const { data: af } = await supabase.from("activities").select("*").in("type", ["Armu","Fleeca"]).order("created_at", { ascending: false })
+    setAllArmuFleeca(af || [])
   }
 
   const handleLogin = async () => {
@@ -468,65 +471,98 @@ export default function App() {
               {card(<>
                 <h3 style={{ color: COLORS.gold, marginBottom: 16, fontSize: 13, textTransform: "uppercase" }}>Disponibilités actions</h3>
                 {(() => {
-                  // Date de début de la semaine active = disponibilité Armu/Fleeca pour tous
-                  const debutSemaine = semaine?.debut ? new Date(semaine.debut) : null
                   const now = new Date()
                   const formatRemaining = (h) => {
                     if (h >= 24) return `${Math.floor(h/24)}j ${Math.floor(h%24)}h`
                     return `${Math.floor(h)}h ${Math.floor((h - Math.floor(h)) * 60)}m`
                   }
-                  return [
-                    { type: "Atm", label: "ATM", cooldown: 3, semaine: false },
-                    { type: "Apu", label: "APU", cooldown: 2, semaine: false },
-                    { type: "Cambu", label: "CAMBU", cooldown: 3, semaine: false },
-                    { type: "Go fast", label: "GO FAST", cooldown: 24, semaine: false },
-                    { type: "Armu", label: "ARMU", cooldown: 168, semaine: true },
-                    { type: "Fleeca", label: "FLEECA", cooldown: 168, semaine: true }
-                  ].map(({ type, label, cooldown, semaine: bySemaine }) => {
-                    const lasts = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 2)
-                    const last = lasts[0]
-                    const lastDate = last ? new Date(last.created_at) : null
 
-                    let available, remaining
-                    if (bySemaine) {
-                      // Dispo si aucune action cette semaine (après le début de semaine)
-                      const faitCetteSemaine = debutSemaine && lastDate && lastDate >= debutSemaine
-                      available = !faitCetteSemaine
-                      if (!available && debutSemaine) {
-                        const prochaineDispo = new Date(debutSemaine.getTime() + 7 * 24 * 3600000)
-                        remaining = (prochaineDispo - now) / 3600000
-                      } else {
-                        remaining = 0
-                      }
-                    } else {
+                  // Slots globaux pour Armu et Fleeca (2 slots par 7j pour toute l'équipe)
+                  const getGlobalSlots = (type) => {
+                    const allActs = allArmuFleeca.filter(a => a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    // Les 2 dernières occurrences globales
+                    const slot1 = allActs[0] ? new Date(allActs[0].created_at) : null
+                    const slot2 = allActs[1] ? new Date(allActs[1].created_at) : null
+                    // Chaque slot se recharge 7j après son utilisation
+                    const dispo1 = !slot1 || (now - slot1) / 3600000 >= 168
+                    const dispo2 = !slot2 || (now - slot2) / 3600000 >= 168
+                    const remaining1 = slot1 && !dispo1 ? 168 - (now - slot1) / 3600000 : 0
+                    const remaining2 = slot2 && !dispo2 ? 168 - (now - slot2) / 3600000 : 0
+                    return [
+                      { date: slot1, dispo: dispo1, remaining: remaining1, who: allActs[0] ? members.find(m => m.id === allActs[0].member_id)?.name : null },
+                      { date: slot2, dispo: dispo2, remaining: remaining2, who: allActs[1] ? members.find(m => m.id === allActs[1].member_id)?.name : null },
+                    ]
+                  }
+
+                  const standardActions = [
+                    { type: "Atm", label: "ATM", cooldown: 3 },
+                    { type: "Apu", label: "APU", cooldown: 2 },
+                    { type: "Cambu", label: "CAMBU", cooldown: 3 },
+                    { type: "Go fast", label: "GO FAST", cooldown: 24 },
+                  ]
+
+                  const globalActions = [
+                    { type: "Armu", label: "ARMU" },
+                    { type: "Fleeca", label: "FLEECA" },
+                  ]
+
+                  return <>
+                    {standardActions.map(({ type, label, cooldown }) => {
+                      const lasts = activities.filter(a => a.member_id === effectiveMember?.id && a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 2)
+                      const last = lasts[0]
+                      const lastDate = last ? new Date(last.created_at) : null
                       const diffH = lastDate ? (now - lastDate) / 3600000 : null
-                      available = !lastDate || diffH >= cooldown
-                      remaining = lastDate && !available ? cooldown - diffH : 0
-                    }
-
-                    return (
-                      <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>{label} {bySemaine && <span style={{ fontSize: 10, color: COLORS.textMuted, fontWeight: 400 }}>(1/semaine)</span>}</div>
-                          {lasts.length === 0
-                            ? <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>Jamais effectué</div>
-                            : lasts.map((l, i) => {
-                              const d = new Date(l.created_at)
-                              return (
-                                <div key={i} style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
-                                  {i === 0 ? "Dernière" : "Avant"} : {d.toLocaleDateString('fr-FR')} {d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                              )
-                            })
+                      const available = !lastDate || diffH >= cooldown
+                      const remaining = lastDate && !available ? cooldown - diffH : 0
+                      return (
+                        <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>
+                            {lasts.length === 0
+                              ? <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>Jamais effectué</div>
+                              : lasts.map((l, i) => {
+                                const d = new Date(l.created_at)
+                                return <div key={i} style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>{i === 0 ? "Dernière" : "Avant"} : {d.toLocaleDateString('fr-FR')} {d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                              })
+                            }
+                          </div>
+                          {available
+                            ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
+                            : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</span>
                           }
                         </div>
-                        {available
-                          ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
-                          : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</span>
-                        }
-                      </div>
-                    )
-                  })
+                      )
+                    })}
+
+                    {globalActions.map(({ type, label }) => {
+                      const slots = getGlobalSlots(type)
+                      return (
+                        <div key={type} style={{ padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 6 }}>{label} <span style={{ fontSize: 10, color: COLORS.textMuted, fontWeight: 400 }}>(2 slots / 7j — équipe)</span></div>
+                          <div style={{ display: "flex", gap: 12 }}>
+                            {slots.map((slot, i) => (
+                              <div key={i} style={{ flex: 1, background: COLORS.bg, borderRadius: 8, padding: "8px 10px", border: `1px solid ${slot.dispo ? COLORS.success+"44" : COLORS.border}` }}>
+                                <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 4 }}>Slot {i + 1}</div>
+                                {slot.date
+                                  ? <div style={{ fontSize: 11, color: COLORS.textMuted }}>
+                                      {slot.who && <span style={{ color: COLORS.gold }}>{slot.who} </span>}
+                                      {slot.date.toLocaleDateString('fr-FR')} {slot.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                  : <div style={{ fontSize: 11, color: COLORS.textMuted }}>Jamais utilisé</div>
+                                }
+                                <div style={{ marginTop: 4 }}>
+                                  {slot.dispo
+                                    ? <span style={{ color: COLORS.success, fontSize: 12, fontWeight: 600 }}>✓ Disponible</span>
+                                    : <span style={{ color: COLORS.warning, fontSize: 12, fontWeight: 600 }}>⏳ {formatRemaining(slot.remaining)}</span>
+                                  }
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </>
                 })()}
               </>)}
               {card(<>
