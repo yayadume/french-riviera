@@ -76,6 +76,8 @@ export default function App() {
   const [fertiSearch, setFertiSearch] = useState("")
   const [fertiFilter, setFertiFilter] = useState("tous")
   const [viewAsId, setViewAsId] = useState(null)
+  const [allScores, setAllScores] = useState([])
+  const [allSalaires, setAllSalaires] = useState([])
 
   const isAdmin = member?.name === "DUME"
   const effectiveMember = viewAsId ? (members.find(m => m.id === viewAsId) || member) : member
@@ -132,6 +134,10 @@ export default function App() {
     if (pts) setPointsConfig(pts)
     const { data: cf } = await supabase.from("contrats_ferti").select("*").order("created_at", { ascending: false })
     setContratsFerti(cf || [])
+    const { data: as } = await supabase.from("scores").select("*")
+    setAllScores(as || [])
+    const { data: asal } = await supabase.from("salaires").select("*")
+    setAllSalaires(asal || [])
   }
 
   const handleLogin = async () => {
@@ -361,16 +367,72 @@ export default function App() {
             })()}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
-              {statFrac("Nombre de ventes", myVentes, totalVentes)}
-              {statFrac("Nombre de plantations", myPlantations, totalPlantations)}
-              {statFrac("Actions", myActions, totalActions)}
+              {/* VENTES */}
+              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de ventes</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myVentes} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalVentes}</span></div>
+                {(() => {
+                  const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.vente || 0))
+                  const recordGlobal = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.vente || 0))
+                  const recordAbsolu = Math.max(0, ...allScores.map(s => s.vente || 0))
+                  const holderAbsolu = allScores.find(s => s.vente === recordAbsolu)
+                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
+                    <div>🏆 Perso : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                    <div>🌍 Absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                  </div>
+                })()}
+              </div>
+
+              {/* PLANTATIONS */}
+              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de plantations</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myPlantations} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalPlantations}</span></div>
+                {(() => {
+                  const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.plantation || 0))
+                  const recordAbsolu = Math.max(0, ...allScores.map(s => s.plantation || 0))
+                  const holderAbsolu = allScores.find(s => s.plantation === recordAbsolu)
+                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
+                    <div>🏆 Perso : <span style={{ color: "#4ade80" }}>{recordPerso}</span></div>
+                    <div>🌍 Absolu : <span style={{ color: "#4ade80" }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                  </div>
+                })()}
+              </div>
+
+              {/* ACTIONS */}
+              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myActions} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalActions}</span></div>
+                {(() => {
+                  const getActions = (s) => (s.cambu||0)+(s.atm||0)+(s.apu||0)+(s.go_fast||0)
+                  const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(getActions))
+                  const recordAbsolu = Math.max(0, ...allScores.map(getActions))
+                  const holderAbsolu = allScores.find(s => getActions(s) === recordAbsolu)
+                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
+                    <div>🏆 Perso : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                    <div>🌍 Absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                  </div>
+                })()}
+              </div>
+
+              {/* SALAIRE */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
                 <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Salaire</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.success }}>
                   {Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $
                   <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {Math.round(salaires.reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)).toLocaleString()} $</span>
                 </div>
+                {(() => {
+                  const recordPerso = Math.max(0, ...allSalaires.filter(s => s.member_id === effectiveMember?.id).map(s => s.salaire_total || 0))
+                  const recordAbsolu = Math.max(0, ...allSalaires.map(s => s.salaire_total || 0))
+                  const holderAbsolu = allSalaires.find(s => s.salaire_total === recordAbsolu)
+                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
+                    <div>🏆 Perso : <span style={{ color: COLORS.success }}>{Math.round(recordPerso).toLocaleString()} $</span></div>
+                    <div>🌍 Absolu : <span style={{ color: COLORS.success }}>{Math.round(recordAbsolu).toLocaleString()} $</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                  </div>
+                })()}
               </div>
+
+              {/* POINTS */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, height: "100%" }}>
                   <div>
@@ -379,6 +441,15 @@ export default function App() {
                       {myScores?.points ?? 0}
                       <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)}</span>
                     </div>
+                    {(() => {
+                      const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.points || 0))
+                      const recordAbsolu = Math.max(0, ...allScores.map(s => s.points || 0))
+                      const holderAbsolu = allScores.find(s => s.points === recordAbsolu)
+                      return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
+                        <div>🏆 <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                        <div>🌍 <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                      </div>
+                    })()}
                   </div>
                   <div style={{ borderLeft: `1px solid ${COLORS.border}`, paddingLeft: 12 }}>
                     <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pts Tablette</div>
