@@ -12,13 +12,16 @@ const ITEM_IMAGES = {
   "CANNABIS": "/Cannabis.png", "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png",
   "ARGENT": "/argent.png", "ARGENT SALE": "/argent sale.png",
   "METH BLEUE": "/meth-bleue.png", "BRANCHE DE CANNABIS": "/branche.png", "BOÎTIER DARKNET": "/boitier-darknet.png",
-  "COCAÏNE": "/cocaïne.png", "B MAGIC": "/b-magiq.png"
+  "COCAÏNE": "/cocaïne.png", "B MAGIC": "/b-magiq.png",
+  "FERTILISANT": "/fertilisant.png", "POT DE PLANTATION": "/pot de plantation.png",
+  "GRAINE DE STRAM": "/graine.png", "BOUTEILLE D'EAU": "/bouteille.png"
 }
 
 const MEMBER_PHOTOS = {
   "DUME": "/dume.png", "JORDAN": "/jordan.png", "CIRO": "/ciro.png",
   "TONY": "/tony.png", "PARKER": "/parker.png", "MARTINO": "/martino.png", "MAMADE": "/mamade.png",
-  "ASHLEY": "/ashley.png", "DON": "/don.png", "NEXYO": "/nexyo.png"
+  "ASHLEY": "/ashley.png", "DON": "/don.png", "NEXYO": "/nexyo.png",
+  "KODA": "/Koda.png", "LARISSA": "/Larissa.png"
 }
 
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
