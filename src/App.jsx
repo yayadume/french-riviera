@@ -94,7 +94,13 @@ export default function App() {
 
   useEffect(() => {
     if (!session) return
-    supabase.from("members").select("*").eq("user_id", session.user.id).single().then(({ data }) => setMember(data))
+    supabase.from("members").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
+      if (data?.grade === "Ancien Membre") {
+        supabase.auth.signOut()
+        return
+      }
+      setMember(data)
+    })
     loadData()
     const channel = supabase.channel("realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "camera_events" }, () => loadData())
@@ -730,7 +736,11 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {scores.filter(s => s.semaine_id === semaine?.id).sort((a,b) => b.points - a.points).map((s, i) => {
+                  {scores.filter(s => {
+                    if (s.semaine_id !== semaine?.id) return false
+                    const m = members.find(mb => mb.id === s.member_id)
+                    return m?.grade !== "Ancien Membre"
+                  }).sort((a,b) => b.points - a.points).map((s, i) => {
                     const mActs = (s.cambu||0)+(s.atm||0)+(s.apu||0)+(s.go_fast||0)
                     const pctA = quotas.actions > 0 ? Math.min((mActs / quotas.actions) * 100, 100) : 0
                     const pctP = quotas.plantations > 0 ? Math.min(((s.plantation||0) / quotas.plantations) * 100, 100) : 0
@@ -851,35 +861,65 @@ export default function App() {
                 "Sous Capo": { border: COLORS.blueLight }, "Commandant": { border: "#6b7fa3" },
                 "Lieutenant": { border: "#555" }, "Soldat d'élite": { border: "#444" }, "Soldat": { border: COLORS.border }, "Charbon": { border: "#3a3a3a" }
               }
+              const activeMembers = members.filter(m => (m.grade || "Soldat") !== "Ancien Membre")
+              const anciensMembres = members.filter(m => m.grade === "Ancien Membre")
               const grouped = gradeOrder.reduce((acc, g) => {
-                const list = members.filter(m => (m.grade || "Soldat") === g)
+                const list = activeMembers.filter(m => (m.grade || "Soldat") === g)
                 if (list.length > 0) acc.push({ grade: g, members: list })
                 return acc
               }, [])
-              return grouped.map(({ grade, members: gm }, gi) => {
-                const c = gradeColors[grade] || gradeColors["Soldat"]
-                const icon = gradeIcons[grade] || "⚔️"
-                const isTop = ["Chef","Capo"].includes(grade)
-                return (
-                  <div key={grade}>
-                    {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
-                    <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
-                      {gm.map(m => (
-                        <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid ${c.border}`, width: isTop ? 180 : 140 }}>
+              return <>
+                {grouped.map(({ grade, members: gm }, gi) => {
+                  const c = gradeColors[grade] || gradeColors["Soldat"]
+                  const icon = gradeIcons[grade] || "⚔️"
+                  const isTop = ["Chef","Capo"].includes(grade)
+                  const cardW = isTop ? 200 : 160
+                  const cardH = isTop ? 280 : 220
+                  return (
+                    <div key={grade}>
+                      {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
+                      <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 4 }}>
+                        {gm.map(m => (
+                          <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid ${c.border}`, width: cardW }}>
+                            {MEMBER_PHOTOS[m.name]
+                              ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: cardH, objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                              : <div style={{ width: "100%", height: cardH, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 56 : 40 }}>{icon}</div>
+                            }
+                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.85))", padding: "30px 10px 10px", textAlign: "center" }}>
+                              <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: "#fff", textShadow: "0 1px 4px #000" }}>{m.name}</div>
+                              <div style={{ fontSize: 11, color: c.border === COLORS.gold ? COLORS.gold : "#aaa", marginTop: 3, fontWeight: 600 }}>{grade}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* ANCIENS MEMBRES */}
+                {anciensMembres.length > 0 && (
+                  <div style={{ marginTop: 40 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, justifyContent: "center" }}>
+                      <div style={{ height: 1, width: 80, background: "#444" }} />
+                      <span style={{ fontSize: 12, color: "#555", textTransform: "uppercase", letterSpacing: "0.15em" }}>🕊️ Anciens membres</span>
+                      <div style={{ height: 1, width: 80, background: "#444" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+                      {anciensMembres.map(m => (
+                        <div key={m.id} style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: `2px solid #333`, width: 120, opacity: 0.6, filter: "grayscale(60%)" }}>
                           {MEMBER_PHOTOS[m.name]
-                            ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: isTop ? 240 : 180, objectFit: "cover", objectPosition: "center top", display: "block" }} />
-                            : <div style={{ width: "100%", height: isTop ? 240 : 180, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isTop ? 56 : 40 }}>{icon}</div>
+                            ? <img src={MEMBER_PHOTOS[m.name]} alt={m.name} style={{ width: "100%", height: 160, objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                            : <div style={{ width: "100%", height: 160, background: "#0a1628", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>👤</div>
                           }
-                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.85))", padding: "30px 10px 10px", textAlign: "center" }}>
-                            <div style={{ fontWeight: 700, fontSize: isTop ? 15 : 13, color: "#fff", textShadow: "0 1px 4px #000" }}>{m.name}</div>
-                            <div style={{ fontSize: 11, color: c.border === COLORS.gold ? COLORS.gold : "#aaa", marginTop: 3, fontWeight: 600 }}>{grade}</div>
+                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.9))", padding: "20px 8px 8px", textAlign: "center" }}>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: "#aaa", textShadow: "0 1px 4px #000" }}>{m.name}</div>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                )
-              })
+                )}
+              </>
             })()}
           </div>
         )}
@@ -1185,7 +1225,7 @@ export default function App() {
                       <td style={{ padding: "10px 14px" }}>
                         <select value={m.grade || "Soldat"} onChange={e => handleChangeGrade(m.id, e.target.value)}
                           style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: 12, cursor: "pointer" }}>
-                          {["Charbon","Soldat","Soldat d'élite","Lieutenant","Commandant","Sous Capo","Capo","Chef"].map(g => <option key={g} value={g}>{g}</option>)}
+                          {["Charbon","Soldat","Soldat d'élite","Lieutenant","Commandant","Sous Capo","Capo","Chef","Ancien Membre"].map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
