@@ -876,8 +876,8 @@ export default function App() {
                   const c = gradeColors[grade] || gradeColors["Soldat"]
                   const icon = gradeIcons[grade] || "⚔️"
                   const isTop = ["Chef","Capo"].includes(grade)
-                  const cardW = isTop ? 240 : 190
                   const cardH = isTop ? 320 : 250
+                  const cardW = Math.round(cardH * 14 / 10)
                   return (
                     <div key={grade}>
                       {gi > 0 && <div style={{ width: 2, height: 30, background: COLORS.border, margin: "0 auto" }} />}
