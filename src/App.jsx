@@ -610,8 +610,8 @@ export default function App() {
                         <span style={{ fontSize: 18, fontWeight: 800, color: totalPct >= 100 ? COLORS.success : totalPct >= 50 ? COLORS.warning : COLORS.danger }}>{totalPct}%</span>
                       </div>
                       <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 12 }}>
-                        <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Dernière activité — membres</div>
-                        {members.filter(m => m.grade !== "Ancien Membre").sort((a, b) => {
+                        <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Dernière activité {isAdmin ? "— membres" : ""}</div>
+                        {(isAdmin ? members.filter(m => m.grade !== "Ancien Membre") : members.filter(m => m.id === effectiveMember?.id)).sort((a, b) => {
                           const la = lastActivities.find(x => x.member_id === a.id)
                           const lb = lastActivities.find(x => x.member_id === b.id)
                           if (!la) return 1
