@@ -604,10 +604,44 @@ export default function App() {
                 {(() => {
                   const totalPct = Math.min(Math.round(((myActions / quotas.actions) + (myPlantations / quotas.plantations) + (myVentes / quotas.ventes)) / 3 * 100), 100)
                   return (
-                    <div style={{ marginTop: 8, paddingTop: 12, borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Accomplissement global</span>
-                      <span style={{ fontSize: 18, fontWeight: 800, color: totalPct >= 100 ? COLORS.success : totalPct >= 50 ? COLORS.warning : COLORS.danger }}>{totalPct}%</span>
-                    </div>
+                    <>
+                      <div style={{ marginTop: 8, paddingTop: 12, borderTop: `1px solid ${COLORS.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <span style={{ fontSize: 12, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Accomplissement global</span>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: totalPct >= 100 ? COLORS.success : totalPct >= 50 ? COLORS.warning : COLORS.danger }}>{totalPct}%</span>
+                      </div>
+                      <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 12 }}>
+                        <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Dernière activité — membres</div>
+                        {members.filter(m => m.grade !== "Ancien Membre").sort((a, b) => {
+                          const la = lastActivities.find(x => x.member_id === a.id)
+                          const lb = lastActivities.find(x => x.member_id === b.id)
+                          if (!la) return 1
+                          if (!lb) return -1
+                          return new Date(lb.created_at) - new Date(la.created_at)
+                        }).map(m => {
+                          const last = lastActivities.find(x => x.member_id === m.id)
+                          const now = new Date()
+                          let label = "Jamais"
+                          let color = "#555"
+                          if (last) {
+                            const diffH = (now - new Date(last.created_at)) / 3600000
+                            const days = Math.floor(diffH / 24)
+                            const hours = Math.floor(diffH % 24)
+                            const mins = Math.floor((diffH * 60) % 60)
+                            label = days > 0 ? `${days}j ${hours}h ${mins}m` : hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+                            color = diffH < 24 ? COLORS.success : diffH < 72 ? COLORS.warning : COLORS.danger
+                          }
+                          return (
+                            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: `1px solid ${COLORS.border}22` }}>
+                              <span style={{ fontSize: 12, color: COLORS.text, fontWeight: 600 }}>{m.name}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 12, color }}>{label}</span>
+                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </>
                   )
                 })()}
               </>)}
