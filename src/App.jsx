@@ -83,6 +83,7 @@ export default function App() {
   const [allScores, setAllScores] = useState([])
   const [allSalaires, setAllSalaires] = useState([])
   const [allArmuFleeca, setAllArmuFleeca] = useState([])
+  const [lastActivities, setLastActivities] = useState([])
 
   const isAdmin = member?.name === "DUME"
   const effectiveMember = viewAsId ? (members.find(m => m.id === viewAsId) || member) : member
@@ -151,6 +152,8 @@ export default function App() {
     setAllSalaires(asal || [])
     const { data: af } = await supabase.from("activities").select("*").in("type", ["Armu","Fleeca"]).order("created_at", { ascending: false })
     setAllArmuFleeca(af || [])
+    const { data: la } = await supabase.from("activities").select("member_id, created_at").order("created_at", { ascending: false })
+    setLastActivities(la || [])
   }
 
   const handleLogin = async () => {
@@ -1211,7 +1214,7 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: COLORS.blue }}>
-                    {["Membre","Email","UID","Grade","MDP","Action"].map(h => (
+                    {["Membre","Email","UID","Grade","Inactivité","MDP","Action"].map(h => (
                       <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -1227,6 +1230,20 @@ export default function App() {
                           style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: 12, cursor: "pointer" }}>
                           {["Charbon","Soldat","Soldat d'élite","Lieutenant","Commandant","Sous Capo","Capo","Chef","Ancien Membre"].map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
+                      </td>
+                      <td style={{ padding: "10px 14px" }}>
+                        {(() => {
+                          const last = lastActivities.find(a => a.member_id === m.id)
+                          if (!last) return <span style={{ color: COLORS.textMuted, fontSize: 12 }}>Jamais</span>
+                          const diffMs = new Date() - new Date(last.created_at)
+                          const diffH = diffMs / 3600000
+                          const days = Math.floor(diffH / 24)
+                          const hours = Math.floor(diffH % 24)
+                          const mins = Math.floor((diffH * 60) % 60)
+                          const color = diffH < 24 ? COLORS.success : diffH < 72 ? COLORS.warning : COLORS.danger
+                          const label = days > 0 ? `${days}j ${hours}h ${mins}m` : hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+                          return <span style={{ fontSize: 12, fontWeight: 600, color }}>Inactif depuis {label}</span>
+                        })()}
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         <button onClick={async () => {
