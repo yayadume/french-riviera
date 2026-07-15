@@ -995,7 +995,7 @@ export default function App() {
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
                   {sel(form.drogue, v => setForm({...form, drogue: v}),
-                    [<option key="" value="">-- Choisir --</option>, ...DROGUES_LIST.map(d => <option key={d} value={d}>{d}</option>)]
+                    [<option key="" value="">-- Choisir --</option>, ...drugPrices.map(d => <option key={d.drogue} value={d.drogue}>{d.drogue}</option>)]
                   )}
                 </div>
               )}
