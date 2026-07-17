@@ -1030,10 +1030,33 @@ export default function App() {
               </div>
               {form.type === "vente" && (
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
-                  {sel(form.drogue, v => setForm({...form, drogue: v}),
-                    [<option key="" value="">-- Choisir --</option>, ...drugPrices.map(d => <option key={d.drogue} value={d.drogue}>{d.drogue}</option>)]
-                  )}
+                  <label style={{ display: "block", marginBottom: 10, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {drugPrices.map(d => {
+                      const isSelected = form.drogue === d.drogue
+                      const img = ITEM_IMAGES[d.drogue?.toUpperCase()]
+                      return (
+                        <div key={d.drogue} onClick={() => setForm({ ...form, drogue: d.drogue })}
+                          style={{
+                            width: 92, padding: "10px 8px", borderRadius: 10, cursor: "pointer",
+                            border: `2px solid ${isSelected ? COLORS.gold : COLORS.border}`,
+                            background: isSelected ? `${COLORS.gold}1a` : "#0a1628",
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                            transition: "border-color 0.15s, background 0.15s"
+                          }}>
+                          {img
+                            ? <img src={img} alt={d.drogue} style={{ width: 44, height: 44, objectFit: "contain" }} />
+                            : <div style={{ width: 44, height: 44, borderRadius: 8, background: COLORS.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💊</div>
+                          }
+                          <span style={{
+                            fontSize: 11, fontWeight: 600, textAlign: "center", lineHeight: 1.2,
+                            color: isSelected ? COLORS.gold : COLORS.textMuted, textTransform: "uppercase"
+                          }}>{d.drogue}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {drugPrices.length === 0 && <p style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 6 }}>Aucune drogue configurée.</p>}
                 </div>
               )}
               <div style={{ marginBottom: 14 }}>
