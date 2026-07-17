@@ -8,11 +8,13 @@ const COLORS = {
 }
 
 const ITEM_IMAGES = {
-  "METH": "/meth.png", "TRANQ": "/tranq.png", "POCHON DE MEXICANA": "/mexicana.png",
-  "CANNABIS": "/Cannabis.png", "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png",
+  "METH": "/meth.png", "TRANQ": "/tranq.png", "POCHON DE MEXICANA": "/mexicana.png", "MEXICANA": "/mexicana.png",
+  "CANNABIS": "/Cannabis.png", "WEED": "/Cannabis.png",
+  "CRACK": "/crack.png", "CARTE PP": "/carte-pp.png", "BRANCHE": "/branche.png",
   "ARGENT": "/argent.png", "ARGENT SALE": "/argent sale.png",
   "METH BLEUE": "/meth-bleue.png", "BRANCHE DE CANNABIS": "/branche.png", "BOÎTIER DARKNET": "/boitier-darknet.png",
-  "COCAÏNE": "/cocaïne.png", "B MAGIC": "/b-magiq.png",
+  "COCAÏNE": "/cocaïne.png", "COKE": "/coke.png", "B MAGIC": "/b-magiq.png",
+  "LEAN": "/lean.png", "ECSTASY": "/ecstasy.png",
   "FERTILISANT": "/fertilisant.png", "POT DE PLANTATION": "/pot de plantation.png",
   "GRAINE DE STRAM": "/graine.png", "BOUTEILLE D'EAU": "/bouteille.png"
 }
