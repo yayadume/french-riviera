@@ -435,82 +435,200 @@ export default function App() {
 
               {/* PLANTATIONS */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de plantations</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myPlantations} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalPlantations}</span></div>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de plantations</div>
                 {(() => {
+                  const nonCharbonIds = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                  const charbonIds = members.filter(m => (m.grade || "Charbon") === "Charbon").map(m => m.id)
+
+                  const totalPlantTablette = activities.filter(a => a.type === "Plantation" && nonCharbonIds.includes(a.member_id)).reduce((s, a) => s + a.quantity, 0)
+                  const totalPlantCharbon = activities.filter(a => a.type === "Plantation" && charbonIds.includes(a.member_id)).reduce((s, a) => s + a.quantity, 0)
+
+                  const weeklyTeamPlant = {}, weeklyTablettePlant = {}, weeklyCharbonPlant = {}
+                  allScores.forEach(s => {
+                    weeklyTeamPlant[s.semaine_id] = (weeklyTeamPlant[s.semaine_id] || 0) + (s.plantation || 0)
+                    if (nonCharbonIds.includes(s.member_id)) weeklyTablettePlant[s.semaine_id] = (weeklyTablettePlant[s.semaine_id] || 0) + (s.plantation || 0)
+                    if (charbonIds.includes(s.member_id)) weeklyCharbonPlant[s.semaine_id] = (weeklyCharbonPlant[s.semaine_id] || 0) + (s.plantation || 0)
+                  })
+                  const recordTeamPlant = Math.max(0, ...Object.values(weeklyTeamPlant))
+                  const recordTablettePlant = Math.max(0, ...Object.values(weeklyTablettePlant))
+                  const recordCharbonPlant = Math.max(0, ...Object.values(weeklyCharbonPlant))
+
                   const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.plantation || 0))
                   const recordAbsolu = Math.max(0, ...allScores.map(s => s.plantation || 0))
                   const holderAbsolu = allScores.find(s => s.plantation === recordAbsolu)
-                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
-                    <div>🏆 Perso : <span style={{ color: "#4ade80" }}>{recordPerso}</span></div>
-                    <div>🌍 Absolu : <span style={{ color: "#4ade80" }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
-                  </div>
+
+                  const row = (label, value, record, color) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 12, color: COLORS.textMuted }}>{label}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color }}>{value} <span style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 400 }}>/ {record}</span></span>
+                    </div>
+                  )
+
+                  return <>
+                    {row("Total équipe", totalPlantations, recordTeamPlant, "#4ade80")}
+                    {row("Tablette", totalPlantTablette, recordTablettePlant, "#60a5fa")}
+                    {row("Charbon", totalPlantCharbon, recordCharbonPlant, "#9ca3af")}
+                    <div style={{ borderTop: `1px solid ${COLORS.border}`, margin: "10px 0 6px" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 13, color: COLORS.text, fontWeight: 600 }}>Mes plantations</span>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: "#4ade80" }}>{myPlantations}</span>
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 11, color: COLORS.textMuted }}>
+                      <div>🏆 Mon record : <span style={{ color: "#4ade80" }}>{recordPerso}</span></div>
+                      <div>🌍 Record absolu : <span style={{ color: "#4ade80" }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                    </div>
+                  </>
                 })()}
               </div>
 
               {/* ACTIONS */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myActions} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalActions}</span></div>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</div>
                 {(() => {
                   const getActions = (s) => (s.cambu||0)+(s.atm||0)+(s.apu||0)+(s.go_fast||0)
+                  const nonCharbonIds = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                  const charbonIds = members.filter(m => (m.grade || "Charbon") === "Charbon").map(m => m.id)
+
+                  const totalActionsTablette = activities.filter(a => ACTION_TYPES.includes(a.type) && nonCharbonIds.includes(a.member_id)).reduce((s, a) => s + a.quantity, 0)
+                  const totalActionsCharbon = activities.filter(a => ACTION_TYPES.includes(a.type) && charbonIds.includes(a.member_id)).reduce((s, a) => s + a.quantity, 0)
+
+                  const weeklyTeamActions = {}, weeklyTabletteActions = {}, weeklyCharbonActions = {}
+                  allScores.forEach(s => {
+                    const v = getActions(s)
+                    weeklyTeamActions[s.semaine_id] = (weeklyTeamActions[s.semaine_id] || 0) + v
+                    if (nonCharbonIds.includes(s.member_id)) weeklyTabletteActions[s.semaine_id] = (weeklyTabletteActions[s.semaine_id] || 0) + v
+                    if (charbonIds.includes(s.member_id)) weeklyCharbonActions[s.semaine_id] = (weeklyCharbonActions[s.semaine_id] || 0) + v
+                  })
+                  const recordTeamActions = Math.max(0, ...Object.values(weeklyTeamActions))
+                  const recordTabletteActions = Math.max(0, ...Object.values(weeklyTabletteActions))
+                  const recordCharbonActions = Math.max(0, ...Object.values(weeklyCharbonActions))
+
                   const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(getActions))
                   const recordAbsolu = Math.max(0, ...allScores.map(getActions))
                   const holderAbsolu = allScores.find(s => getActions(s) === recordAbsolu)
-                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
-                    <div>🏆 Perso : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
-                    <div>🌍 Absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
-                  </div>
+
+                  const row = (label, value, record, color) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 12, color: COLORS.textMuted }}>{label}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color }}>{value} <span style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 400 }}>/ {record}</span></span>
+                    </div>
+                  )
+
+                  return <>
+                    {row("Total équipe", totalActions, recordTeamActions, COLORS.gold)}
+                    {row("Tablette", totalActionsTablette, recordTabletteActions, "#60a5fa")}
+                    {row("Charbon", totalActionsCharbon, recordCharbonActions, "#9ca3af")}
+                    <div style={{ borderTop: `1px solid ${COLORS.border}`, margin: "10px 0 6px" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 13, color: COLORS.text, fontWeight: 600 }}>Mes actions</span>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: COLORS.gold }}>{myActions}</span>
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 11, color: COLORS.textMuted }}>
+                      <div>🏆 Mon record : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                      <div>🌍 Record absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                    </div>
+                  </>
                 })()}
               </div>
 
               {/* SALAIRE */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Salaire</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.success }}>
-                  {Math.round(mySalaire?.salaire_total ?? 0).toLocaleString()} $
-                  <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {Math.round(salaires.reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)).toLocaleString()} $</span>
-                </div>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Salaire</div>
                 {(() => {
+                  const nonCharbonIds = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                  const charbonIds = members.filter(m => (m.grade || "Charbon") === "Charbon").map(m => m.id)
+
+                  const totalSalaireTeam = salaires.reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)
+                  const totalSalaireTablette = salaires.filter(s => nonCharbonIds.includes(s.member_id)).reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)
+                  const totalSalaireCharbon = salaires.filter(s => charbonIds.includes(s.member_id)).reduce((sum, s) => sum + (s.salaire_total ?? 0), 0)
+
+                  const weeklyTeamSalaire = {}, weeklyTabletteSalaire = {}, weeklyCharbonSalaire = {}
+                  allSalaires.forEach(s => {
+                    weeklyTeamSalaire[s.semaine_id] = (weeklyTeamSalaire[s.semaine_id] || 0) + (s.salaire_total || 0)
+                    if (nonCharbonIds.includes(s.member_id)) weeklyTabletteSalaire[s.semaine_id] = (weeklyTabletteSalaire[s.semaine_id] || 0) + (s.salaire_total || 0)
+                    if (charbonIds.includes(s.member_id)) weeklyCharbonSalaire[s.semaine_id] = (weeklyCharbonSalaire[s.semaine_id] || 0) + (s.salaire_total || 0)
+                  })
+                  const recordTeamSalaire = Math.max(0, ...Object.values(weeklyTeamSalaire))
+                  const recordTabletteSalaire = Math.max(0, ...Object.values(weeklyTabletteSalaire))
+                  const recordCharbonSalaire = Math.max(0, ...Object.values(weeklyCharbonSalaire))
+
                   const recordPerso = Math.max(0, ...allSalaires.filter(s => s.member_id === effectiveMember?.id).map(s => s.salaire_total || 0))
                   const recordAbsolu = Math.max(0, ...allSalaires.map(s => s.salaire_total || 0))
                   const holderAbsolu = allSalaires.find(s => s.salaire_total === recordAbsolu)
-                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
-                    <div>🏆 Perso : <span style={{ color: COLORS.success }}>{Math.round(recordPerso).toLocaleString()} $</span></div>
-                    <div>🌍 Absolu : <span style={{ color: COLORS.success }}>{Math.round(recordAbsolu).toLocaleString()} $</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
-                  </div>
+
+                  const fmt = (v) => Math.round(v).toLocaleString() + " $"
+                  const row = (label, value, record, color) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 12, color: COLORS.textMuted }}>{label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color }}>{fmt(value)} <span style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 400 }}>/ {fmt(record)}</span></span>
+                    </div>
+                  )
+
+                  return <>
+                    {row("Total équipe", totalSalaireTeam, recordTeamSalaire, COLORS.success)}
+                    {row("Tablette", totalSalaireTablette, recordTabletteSalaire, "#60a5fa")}
+                    {row("Charbon", totalSalaireCharbon, recordCharbonSalaire, "#9ca3af")}
+                    <div style={{ borderTop: `1px solid ${COLORS.border}`, margin: "10px 0 6px" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 13, color: COLORS.text, fontWeight: 600 }}>Mon salaire</span>
+                      <span style={{ fontSize: 17, fontWeight: 800, color: COLORS.success }}>{fmt(mySalaire?.salaire_total ?? 0)}</span>
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 11, color: COLORS.textMuted }}>
+                      <div>🏆 Mon record : <span style={{ color: COLORS.success }}>{fmt(recordPerso)}</span></div>
+                      <div>🌍 Record absolu : <span style={{ color: COLORS.success }}>{fmt(recordAbsolu)}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                    </div>
+                  </>
                 })()}
               </div>
 
               {/* POINTS */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, height: "100%" }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Points</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>
-                      {myScores?.points ?? 0}
-                      <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}> / {scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)}</span>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Points</div>
+                {(() => {
+                  const nonCharbonIds = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                  const charbonIds = members.filter(m => (m.grade || "Charbon") === "Charbon").map(m => m.id)
+
+                  const totalPointsTeam = scores.filter(s => s.semaine_id === semaine?.id).reduce((sum, s) => sum + (s.points ?? 0), 0)
+                  const totalPointsTablette = scores.filter(s => s.semaine_id === semaine?.id && nonCharbonIds.includes(s.member_id)).reduce((sum, s) => sum + (s.points ?? 0), 0)
+                  const totalPointsCharbon = scores.filter(s => s.semaine_id === semaine?.id && charbonIds.includes(s.member_id)).reduce((sum, s) => sum + (s.points ?? 0), 0)
+
+                  const weeklyTeamPoints = {}, weeklyTablettePoints = {}, weeklyCharbonPoints = {}
+                  allScores.forEach(s => {
+                    weeklyTeamPoints[s.semaine_id] = (weeklyTeamPoints[s.semaine_id] || 0) + (s.points || 0)
+                    if (nonCharbonIds.includes(s.member_id)) weeklyTablettePoints[s.semaine_id] = (weeklyTablettePoints[s.semaine_id] || 0) + (s.points || 0)
+                    if (charbonIds.includes(s.member_id)) weeklyCharbonPoints[s.semaine_id] = (weeklyCharbonPoints[s.semaine_id] || 0) + (s.points || 0)
+                  })
+                  const recordTeamPoints = Math.max(0, ...Object.values(weeklyTeamPoints))
+                  const recordTablettePoints = Math.max(0, ...Object.values(weeklyTablettePoints))
+                  const recordCharbonPoints = Math.max(0, ...Object.values(weeklyCharbonPoints))
+
+                  const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.points || 0))
+                  const recordAbsolu = Math.max(0, ...allScores.map(s => s.points || 0))
+                  const holderAbsolu = allScores.find(s => s.points === recordAbsolu)
+
+                  const rnd = (v) => Math.round(v * 100) / 100
+                  const row = (label, value, record, color) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 12, color: COLORS.textMuted }}>{label}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color }}>{rnd(value)} <span style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 400 }}>/ {rnd(record)}</span></span>
                     </div>
-                    {(() => {
-                      const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.points || 0))
-                      const recordAbsolu = Math.max(0, ...allScores.map(s => s.points || 0))
-                      const holderAbsolu = allScores.find(s => s.points === recordAbsolu)
-                      return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
-                        <div>🏆 <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
-                        <div>🌍 <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
-                      </div>
-                    })()}
-                  </div>
-                  <div style={{ borderLeft: `1px solid ${COLORS.border}`, paddingLeft: 12 }}>
-                    <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pts Tablette</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: "#60a5fa" }}>
-                      {(() => {
-                        const nonCharbon = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
-                        return Math.round(scores.filter(s => s.semaine_id === semaine?.id && nonCharbon.includes(s.member_id)).reduce((sum, s) => sum + (s.points ?? 0), 0))
-                      })()}
+                  )
+
+                  return <>
+                    {row("Total équipe", totalPointsTeam, recordTeamPoints, COLORS.gold)}
+                    {row("Tablette", totalPointsTablette, recordTablettePoints, "#60a5fa")}
+                    {row("Charbon", totalPointsCharbon, recordCharbonPoints, "#9ca3af")}
+                    <div style={{ borderTop: `1px solid ${COLORS.border}`, margin: "10px 0 6px" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 13, color: COLORS.text, fontWeight: 600 }}>Mes points</span>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: COLORS.gold }}>{myScores?.points ?? 0}</span>
                     </div>
-                  </div>
-                </div>
+                    <div style={{ marginTop: 4, fontSize: 11, color: COLORS.textMuted }}>
+                      <div>🏆 Mon record : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                      <div>🌍 Record absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                    </div>
+                  </>
+                })()}
               </div>
             </div>
 
