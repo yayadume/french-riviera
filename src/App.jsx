@@ -51,6 +51,39 @@ function Clock() {
   )
 }
 
+function TrendChart({ weeks, colorPerso = COLORS.gold, colorTablette = "#60a5fa", colorCharbon = "#9ca3af" }) {
+  if (!weeks || weeks.length === 0) return <p style={{ color: COLORS.textMuted, fontSize: 12 }}>Pas assez de données.</p>
+  const W = 260, H = 130, padL = 8, padR = 8, padT = 10, padB = 18
+  const maxVal = Math.max(1, ...weeks.flatMap(w => [w.perso, w.tablette, w.charbon]))
+  const stepX = weeks.length > 1 ? (W - padL - padR) / (weeks.length - 1) : 0
+  const scaleY = (v) => H - padB - (v / maxVal) * (H - padT - padB)
+  const scaleX = (i) => padL + i * stepX
+  const linePath = (key) => weeks.map((w, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleY(w[key]).toFixed(1)}`).join(" ")
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 130, display: "block" }}>
+        <path d={linePath("charbon")} fill="none" stroke={colorCharbon} strokeWidth="2" opacity="0.8" />
+        <path d={linePath("tablette")} fill="none" stroke={colorTablette} strokeWidth="2" opacity="0.9" />
+        <path d={linePath("perso")} fill="none" stroke={colorPerso} strokeWidth="2.5" />
+        {weeks.map((w, i) => (
+          <g key={i}>
+            <circle cx={scaleX(i)} cy={scaleY(w.charbon)} r="2.5" fill={colorCharbon} />
+            <circle cx={scaleX(i)} cy={scaleY(w.tablette)} r="2.5" fill={colorTablette} />
+            <circle cx={scaleX(i)} cy={scaleY(w.perso)} r="3" fill={colorPerso} />
+            <text x={scaleX(i)} y={H - 4} textAnchor="middle" fontSize="8" fill={COLORS.textMuted}>{(w.label || "").replace("Semaine ", "S")}</text>
+          </g>
+        ))}
+      </svg>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 4, fontSize: 10, color: COLORS.textMuted, flexWrap: "wrap" }}>
+        <span><span style={{ color: colorPerso }}>●</span> Perso</span>
+        <span><span style={{ color: colorTablette }}>●</span> Tablette</span>
+        <span><span style={{ color: colorCharbon }}>●</span> Charbon</span>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [session, setSession] = useState(null)
   const [member, setMember] = useState(null)
@@ -629,6 +662,45 @@ export default function App() {
                   </>
                 })()}
               </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
+              {(() => {
+                const nonCharbonIds = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                const charbonIds = members.filter(m => (m.grade || "Charbon") === "Charbon").map(m => m.id)
+                const last5 = semaines.slice(0, 5).slice().reverse()
+
+                const buildWeeks = (sourceArray, getValue) => last5.map(sem => {
+                  const rows = sourceArray.filter(s => s.semaine_id === sem.id)
+                  const persoRow = rows.find(r => r.member_id === effectiveMember?.id)
+                  const perso = getValue(persoRow)
+                  const tablette = rows.filter(r => nonCharbonIds.includes(r.member_id)).reduce((sum, r) => sum + getValue(r), 0)
+                  const charbon = rows.filter(r => charbonIds.includes(r.member_id)).reduce((sum, r) => sum + getValue(r), 0)
+                  return { label: sem.nom, perso, tablette, charbon }
+                })
+                const getActionsVal = (r) => r ? (r.cambu||0)+(r.atm||0)+(r.apu||0)+(r.go_fast||0) : 0
+
+                const weeksVentes = buildWeeks(allScores, r => r?.vente || 0)
+                const weeksPlantations = buildWeeks(allScores, r => r?.plantation || 0)
+                const weeksActions = buildWeeks(allScores, getActionsVal)
+                const weeksSalaires = buildWeeks(allSalaires, r => r?.salaire_total || 0)
+                const weeksPoints = buildWeeks(allScores, r => r?.points || 0)
+
+                const chartCard = (title, weeks, colorPerso) => (
+                  <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
+                    <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{title}</div>
+                    <TrendChart weeks={weeks} colorPerso={colorPerso} />
+                  </div>
+                )
+
+                return <>
+                  {chartCard("Évolution ventes (5 sem.)", weeksVentes, COLORS.gold)}
+                  {chartCard("Évolution plantations (5 sem.)", weeksPlantations, "#4ade80")}
+                  {chartCard("Évolution actions (5 sem.)", weeksActions, COLORS.gold)}
+                  {chartCard("Évolution salaire (5 sem.)", weeksSalaires, COLORS.success)}
+                  {chartCard("Évolution points (5 sem.)", weeksPoints, COLORS.gold)}
+                </>
+              })()}
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
