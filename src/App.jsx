@@ -341,19 +341,19 @@ export default function App() {
             </div>
 
             {(() => {
-              const sorted = scores.filter(s => s.semaine_id === semaine?.id).sort((a, b) => b.points - a.points)
+              const activeIds = members.filter(m => m.grade !== "Ancien Membre").map(m => m.id)
+              const sorted = scores.filter(s => s.semaine_id === semaine?.id && activeIds.includes(s.member_id)).sort((a, b) => b.points - a.points)
               const rang = sorted.findIndex(s => s.member_id === effectiveMember?.id) + 1
-              const total = sorted.length
               const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null
               const rangColor = rang === 1 ? COLORS.gold : rang === 2 ? "#c0c0c0" : rang === 3 ? "#cd7f32" : COLORS.text
               const plantParMembre = {}
               activities.forEach(a => { if (a.type === "Plantation") plantParMembre[a.member_id] = (plantParMembre[a.member_id] || 0) + a.quantity })
-              const sortedPlant = Object.entries(plantParMembre).sort((a, b) => b[1] - a[1])
+              const sortedPlant = Object.entries(plantParMembre).filter(([id]) => activeIds.includes(parseInt(id))).sort((a, b) => b[1] - a[1])
               const rangPlant = sortedPlant.findIndex(([id]) => parseInt(id) === effectiveMember?.id) + 1
               const medalPlant = rangPlant === 1 ? "🥇" : rangPlant === 2 ? "🥈" : rangPlant === 3 ? "🥉" : null
               const venteParMembre = {}
               activities.forEach(a => { if (a.type === "vente") venteParMembre[a.member_id] = (venteParMembre[a.member_id] || 0) + a.quantity })
-              const sortedVente = Object.entries(venteParMembre).sort((a, b) => b[1] - a[1])
+              const sortedVente = Object.entries(venteParMembre).filter(([id]) => activeIds.includes(parseInt(id))).sort((a, b) => b[1] - a[1])
               const rangVente = sortedVente.findIndex(([id]) => parseInt(id) === effectiveMember?.id) + 1
               const medalVente = rangVente === 1 ? "🥇" : rangVente === 2 ? "🥈" : rangVente === 3 ? "🥉" : null
               const miniCard = (label, rang, medal, icon) => (
@@ -374,7 +374,6 @@ export default function App() {
                       <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Classement semaine</div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                         <span style={{ fontSize: 48, fontWeight: 800, color: rangColor, lineHeight: 1 }}>#{rang > 0 ? rang : "—"}</span>
-                        <span style={{ fontSize: 18, color: COLORS.textMuted, fontWeight: 400 }}>/ {total}</span>
                       </div>
                     </div>
                     {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
