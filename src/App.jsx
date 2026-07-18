@@ -388,16 +388,21 @@ export default function App() {
               {/* VENTES */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
                 <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de ventes</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{myVentes} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {totalVentes}</span></div>
                 {(() => {
+                  const weeklyTeamVente = {}
+                  allScores.forEach(s => { weeklyTeamVente[s.semaine_id] = (weeklyTeamVente[s.semaine_id] || 0) + (s.vente || 0) })
+                  const recordTeamVente = Math.max(0, ...Object.values(weeklyTeamVente))
                   const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.vente || 0))
-                  const recordGlobal = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.vente || 0))
                   const recordAbsolu = Math.max(0, ...allScores.map(s => s.vente || 0))
                   const holderAbsolu = allScores.find(s => s.vente === recordAbsolu)
-                  return <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
-                    <div>🏆 Perso : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
-                    <div>🌍 Absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
-                  </div>
+                  return <>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{totalVentes} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {recordTeamVente}</span></div>
+                    <div style={{ marginTop: 6, fontSize: 13, color: COLORS.text }}>Mes ventes : <span style={{ color: COLORS.gold, fontWeight: 700 }}>{myVentes}</span></div>
+                    <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
+                      <div>🏆 Perso : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                      <div>🌍 Absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                    </div>
+                  </>
                 })()}
               </div>
 
