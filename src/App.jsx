@@ -53,16 +53,24 @@ function Clock() {
 
 function TrendChart({ weeks, colorPerso = COLORS.gold, colorTablette = "#60a5fa", colorCharbon = "#9ca3af" }) {
   if (!weeks || weeks.length === 0) return <p style={{ color: COLORS.textMuted, fontSize: 12 }}>Pas assez de données.</p>
-  const W = 260, H = 130, padL = 8, padR = 8, padT = 10, padB = 18
+  const W = 280, H = 140, padL = 34, padR = 8, padT = 10, padB = 18
   const maxVal = Math.max(1, ...weeks.flatMap(w => [w.perso, w.tablette, w.charbon]))
+  const ticks = [0, maxVal / 2, maxVal]
   const stepX = weeks.length > 1 ? (W - padL - padR) / (weeks.length - 1) : 0
   const scaleY = (v) => H - padB - (v / maxVal) * (H - padT - padB)
   const scaleX = (i) => padL + i * stepX
   const linePath = (key) => weeks.map((w, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleY(w[key]).toFixed(1)}`).join(" ")
+  const formatTick = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : Math.round(v * 10) / 10
 
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 130, display: "block" }}>
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line x1={padL} y1={scaleY(t)} x2={W - padR} y2={scaleY(t)} stroke={COLORS.border} strokeWidth="1" />
+            <text x={padL - 4} y={scaleY(t) + 3} textAnchor="end" fontSize="8" fill={COLORS.textMuted}>{formatTick(t)}</text>
+          </g>
+        ))}
         <path d={linePath("charbon")} fill="none" stroke={colorCharbon} strokeWidth="2" opacity="0.8" />
         <path d={linePath("tablette")} fill="none" stroke={colorTablette} strokeWidth="2" opacity="0.9" />
         <path d={linePath("perso")} fill="none" stroke={colorPerso} strokeWidth="2.5" />
@@ -399,19 +407,21 @@ export default function App() {
                 </div>
               )
               return (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: "2rem" }}>
-                  {miniCard("Plantations", rangPlant, medalPlant, "🌿")}
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 16, background: `linear-gradient(135deg, ${COLORS.card}, ${COLORS.blue}44)`, border: `1px solid ${COLORS.gold}44`, borderRadius: 16, padding: "16px 40px" }}>
-                    {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
-                    <div>
-                      <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Classement semaine</div>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                        <span style={{ fontSize: 48, fontWeight: 800, color: rangColor, lineHeight: 1 }}>#{rang > 0 ? rang : "—"}</span>
+                <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: "2rem" }}>
+                    {miniCard("Plantations", rangPlant, medalPlant, "🌿")}
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 16, background: `linear-gradient(135deg, ${COLORS.card}, ${COLORS.blue}44)`, border: `1px solid ${COLORS.gold}44`, borderRadius: 16, padding: "16px 40px" }}>
+                      {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
+                      <div>
+                        <div style={{ fontSize: 11, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Classement semaine</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                          <span style={{ fontSize: 48, fontWeight: 800, color: rangColor, lineHeight: 1 }}>#{rang > 0 ? rang : "—"}</span>
+                        </div>
                       </div>
+                      {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
                     </div>
-                    {medal && <span style={{ fontSize: 40 }}>{medal}</span>}
+                    {miniCard("Ventes", rangVente, medalVente, "💊")}
                   </div>
-                  {miniCard("Ventes", rangVente, medalVente, "💊")}
                 </div>
               )
             })()}
