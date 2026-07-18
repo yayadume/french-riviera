@@ -387,20 +387,47 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: "1.5rem" }}>
               {/* VENTES */}
               <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de ventes</div>
+                <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre de ventes</div>
                 {(() => {
-                  const weeklyTeamVente = {}
-                  allScores.forEach(s => { weeklyTeamVente[s.semaine_id] = (weeklyTeamVente[s.semaine_id] || 0) + (s.vente || 0) })
+                  const nonCharbonIds = members.filter(m => (m.grade || "Charbon") !== "Charbon").map(m => m.id)
+                  const charbonIds = members.filter(m => (m.grade || "Charbon") === "Charbon").map(m => m.id)
+
+                  const totalVenteTablette = activities.filter(a => a.type === "vente" && nonCharbonIds.includes(a.member_id)).reduce((s, a) => s + a.quantity, 0)
+                  const totalVenteCharbon = activities.filter(a => a.type === "vente" && charbonIds.includes(a.member_id)).reduce((s, a) => s + a.quantity, 0)
+
+                  const weeklyTeamVente = {}, weeklyTabletteVente = {}, weeklyCharbonVente = {}
+                  allScores.forEach(s => {
+                    weeklyTeamVente[s.semaine_id] = (weeklyTeamVente[s.semaine_id] || 0) + (s.vente || 0)
+                    if (nonCharbonIds.includes(s.member_id)) weeklyTabletteVente[s.semaine_id] = (weeklyTabletteVente[s.semaine_id] || 0) + (s.vente || 0)
+                    if (charbonIds.includes(s.member_id)) weeklyCharbonVente[s.semaine_id] = (weeklyCharbonVente[s.semaine_id] || 0) + (s.vente || 0)
+                  })
                   const recordTeamVente = Math.max(0, ...Object.values(weeklyTeamVente))
+                  const recordTabletteVente = Math.max(0, ...Object.values(weeklyTabletteVente))
+                  const recordCharbonVente = Math.max(0, ...Object.values(weeklyCharbonVente))
+
                   const recordPerso = Math.max(0, ...allScores.filter(s => s.member_id === effectiveMember?.id).map(s => s.vente || 0))
                   const recordAbsolu = Math.max(0, ...allScores.map(s => s.vente || 0))
                   const holderAbsolu = allScores.find(s => s.vente === recordAbsolu)
+
+                  const row = (label, value, record, color) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 12, color: COLORS.textMuted }}>{label}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color }}>{value} <span style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 400 }}>/ {record}</span></span>
+                    </div>
+                  )
+
                   return <>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.gold }}>{totalVentes} <span style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 400 }}>/ {recordTeamVente}</span></div>
-                    <div style={{ marginTop: 6, fontSize: 13, color: COLORS.text }}>Mes ventes : <span style={{ color: COLORS.gold, fontWeight: 700 }}>{myVentes}</span></div>
-                    <div style={{ marginTop: 6, fontSize: 11, color: COLORS.textMuted }}>
-                      <div>🏆 Perso : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
-                      <div>🌍 Absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
+                    {row("Total équipe", totalVentes, recordTeamVente, COLORS.gold)}
+                    {row("Tablette", totalVenteTablette, recordTabletteVente, "#60a5fa")}
+                    {row("Charbon", totalVenteCharbon, recordCharbonVente, "#9ca3af")}
+                    <div style={{ borderTop: `1px solid ${COLORS.border}`, margin: "10px 0 6px" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "4px 0" }}>
+                      <span style={{ fontSize: 13, color: COLORS.text, fontWeight: 600 }}>Mes ventes</span>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: COLORS.gold }}>{myVentes}</span>
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 11, color: COLORS.textMuted }}>
+                      <div>🏆 Mon record : <span style={{ color: COLORS.gold }}>{recordPerso}</span></div>
+                      <div>🌍 Record absolu : <span style={{ color: COLORS.gold }}>{recordAbsolu}</span> <span style={{ color: COLORS.textMuted }}>({holderAbsolu?.member_name})</span></div>
                     </div>
                   </>
                 })()}
