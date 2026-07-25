@@ -1109,7 +1109,10 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => {
+                {salaires.filter(s => {
+                  const m = members.find(mb => mb.id === s.member_id)
+                  return m?.grade !== "Ancien Membre"
+                }).sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => {
                   const paiementSemaine = paiements.find(p => p.member_id === s.member_id && p.semaine_id === semaine?.id)
                   const estPaye = paiementSemaine?.paye || false
                   const aPayer = estPaye ? 0 : s.salaire_total
