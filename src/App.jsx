@@ -1103,34 +1103,16 @@ export default function App() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: COLORS.blue }}>
-                  {["Membre","Salaire Ventes","Salaire Plantations","Total","À payer",...(isAdmin ? ["✅ Payé"] : [])].map(h => (
+                  {["Membre","Salaire Ventes","Salaire Plantations","Total","À payer",...(isAdmin ? ["Action"] : [])].map(h => (
                     <th key={h} style={{ padding: "12px 16px", textAlign: h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => {
-                  // Calcul du cumul à payer :
-                  // On additionne les salaires de toutes les semaines non encore payées pour ce membre
-                  // jusqu'à la semaine actuellement affichée (incluse)
-                  const semainesOrdonnees = [...semaines].sort((a, b) => a.id - b.id).filter(sw => sw.id <= semaine?.id)
-
-                  let aPayer = 0
-                  for (const sw of semainesOrdonnees) {
-                    const pai = paiements.find(p => p.member_id === s.member_id && p.semaine_id === sw.id)
-                    if (pai?.paye) {
-                      // Semaine payée : reset le cumul
-                      aPayer = 0
-                    } else {
-                      // Semaine non payée : ajoute le salaire de cette semaine
-                      // On récupère le salaire depuis allSalaires
-                      const salSemaine = allSalaires.find(sal => sal.member_id === s.member_id && sal.semaine_id === sw.id)
-                      aPayer += salSemaine?.salaire_total || (sw.id === semaine?.id ? s.salaire_total : 0)
-                    }
-                  }
-
                   const paiementSemaine = paiements.find(p => p.member_id === s.member_id && p.semaine_id === semaine?.id)
                   const estPaye = paiementSemaine?.paye || false
+                  const aPayer = estPaye ? 0 : s.salaire_total
 
                   return (
                     <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
@@ -1140,23 +1122,35 @@ export default function App() {
                       <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{Math.round(s.salaire_total).toLocaleString()} $</td>
                       <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700 }}>
                         {estPaye
-                          ? <span style={{ color: COLORS.success }}>✅ Payé</span>
+                          ? <span style={{ color: COLORS.success }}>✅ 0 $</span>
                           : <span style={{ color: aPayer > 0 ? COLORS.warning : COLORS.textMuted }}>{Math.round(aPayer).toLocaleString()} $</span>
                         }
                       </td>
                       {isAdmin && (
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          <input type="checkbox" checked={estPaye} onChange={async (e) => {
-                            const checked = e.target.checked
-                            await supabase.from("paiements").upsert({
-                              member_id: s.member_id,
-                              semaine_id: semaine?.id,
-                              montant: s.salaire_total,
-                              paye: checked,
-                              paye_at: checked ? new Date().toISOString() : null
-                            }, { onConflict: "member_id,semaine_id" })
-                            loadData()
-                          }} style={{ width: 18, height: 18, cursor: "pointer", accentColor: COLORS.gold }} />
+                          {estPaye
+                            ? <button onClick={async () => {
+                                if (!confirm(`Annuler le paiement de ${s.member_name} ?`)) return
+                                await supabase.from("paiements").upsert({
+                                  member_id: s.member_id, semaine_id: semaine?.id,
+                                  montant: s.salaire_total, paye: false, paye_at: null
+                                }, { onConflict: "member_id,semaine_id" })
+                                loadData()
+                              }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: "transparent", color: COLORS.textMuted, cursor: "pointer", fontSize: 12 }}>
+                                Annuler
+                              </button>
+                            : <button onClick={async () => {
+                                if (aPayer === 0) return
+                                if (!confirm(`Confirmer le paiement de ${Math.round(aPayer).toLocaleString()} $ à ${s.member_name} ?`)) return
+                                await supabase.from("paiements").upsert({
+                                  member_id: s.member_id, semaine_id: semaine?.id,
+                                  montant: s.salaire_total, paye: true, paye_at: new Date().toISOString()
+                                }, { onConflict: "member_id,semaine_id" })
+                                loadData()
+                              }} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: aPayer > 0 ? `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.goldLight})` : COLORS.border, color: aPayer > 0 ? "#0a1628" : COLORS.textMuted, cursor: aPayer > 0 ? "pointer" : "default", fontWeight: 700, fontSize: 12 }}>
+                                💰 Payer
+                              </button>
+                          }
                         </td>
                       )}
                     </tr>
