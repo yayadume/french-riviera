@@ -127,6 +127,7 @@ export default function App() {
   const [allSalaires, setAllSalaires] = useState([])
   const [allArmuFleeca, setAllArmuFleeca] = useState([])
   const [lastActivities, setLastActivities] = useState([])
+  const [paiements, setPaiements] = useState([])
 
   const isAdmin = member?.name === "DUME"
   const effectiveMember = viewAsId ? (members.find(m => m.id === viewAsId) || member) : member
@@ -197,6 +198,8 @@ export default function App() {
     setAllArmuFleeca(af || [])
     const { data: la } = await supabase.from("activities").select("member_id, created_at").order("created_at", { ascending: false })
     setLastActivities(la || [])
+    const { data: pai } = await supabase.from("paiements").select("*")
+    setPaiements(pai || [])
   }
 
   const handleLogin = async () => {
@@ -1100,20 +1103,65 @@ export default function App() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: COLORS.blue }}>
-                  {["Membre","Salaire Ventes","Salaire Plantations","Total"].map(h => (
+                  {["Membre","Salaire Ventes","Salaire Plantations","Total","À payer",...(isAdmin ? ["✅ Payé"] : [])].map(h => (
                     <th key={h} style={{ padding: "12px 16px", textAlign: h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => (
-                  <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
-                    <td style={{ padding: "12px 16px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_vente).toLocaleString()} $</td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_plantation).toLocaleString()} $</td>
-                    <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{Math.round(s.salaire_total).toLocaleString()} $</td>
-                  </tr>
-                ))}
+                {salaires.sort((a,b) => b.salaire_total - a.salaire_total).map((s, i) => {
+                  // Calcul du cumul à payer :
+                  // On additionne les salaires de toutes les semaines non encore payées pour ce membre
+                  // jusqu'à la semaine actuellement affichée (incluse)
+                  const semainesOrdonnees = [...semaines].sort((a, b) => a.id - b.id).filter(sw => sw.id <= semaine?.id)
+
+                  let aPayer = 0
+                  for (const sw of semainesOrdonnees) {
+                    const pai = paiements.find(p => p.member_id === s.member_id && p.semaine_id === sw.id)
+                    if (pai?.paye) {
+                      // Semaine payée : reset le cumul
+                      aPayer = 0
+                    } else {
+                      // Semaine non payée : ajoute le salaire de cette semaine
+                      // On récupère le salaire depuis allSalaires
+                      const salSemaine = allSalaires.find(sal => sal.member_id === s.member_id && sal.semaine_id === sw.id)
+                      aPayer += salSemaine?.salaire_total || (sw.id === semaine?.id ? s.salaire_total : 0)
+                    }
+                  }
+
+                  const paiementSemaine = paiements.find(p => p.member_id === s.member_id && p.semaine_id === semaine?.id)
+                  const estPaye = paiementSemaine?.paye || false
+
+                  return (
+                    <tr key={s.member_id} style={{ background: s.member_id === member?.id ? `${COLORS.blue}44` : i % 2 === 0 ? COLORS.card : COLORS.bg, borderBottom: `1px solid ${COLORS.border}` }}>
+                      <td style={{ padding: "12px 16px", fontWeight: 600, color: s.member_id === member?.id ? COLORS.gold : COLORS.text }}>{s.member_name}</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_vente).toLocaleString()} $</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>{Math.round(s.salaire_plantation).toLocaleString()} $</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: COLORS.success }}>{Math.round(s.salaire_total).toLocaleString()} $</td>
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700 }}>
+                        {estPaye
+                          ? <span style={{ color: COLORS.success }}>✅ Payé</span>
+                          : <span style={{ color: aPayer > 0 ? COLORS.warning : COLORS.textMuted }}>{Math.round(aPayer).toLocaleString()} $</span>
+                        }
+                      </td>
+                      {isAdmin && (
+                        <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                          <input type="checkbox" checked={estPaye} onChange={async (e) => {
+                            const checked = e.target.checked
+                            await supabase.from("paiements").upsert({
+                              member_id: s.member_id,
+                              semaine_id: semaine?.id,
+                              montant: s.salaire_total,
+                              paye: checked,
+                              paye_at: checked ? new Date().toISOString() : null
+                            }, { onConflict: "member_id,semaine_id" })
+                            loadData()
+                          }} style={{ width: 18, height: 18, cursor: "pointer", accentColor: COLORS.gold }} />
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
