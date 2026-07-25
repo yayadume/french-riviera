@@ -129,7 +129,7 @@ export default function App() {
   const [lastActivities, setLastActivities] = useState([])
   const [paiements, setPaiements] = useState([])
 
-  const isAdmin = member?.name === "DUME"
+  const isAdmin = member?.is_admin === true || member?.name === "DUME"
   const effectiveMember = viewAsId ? (members.find(m => m.id === viewAsId) || member) : member
 
   useEffect(() => {
@@ -1546,7 +1546,7 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: COLORS.blue }}>
-                    {["Membre","Email","UID","Grade","Inactivité","MDP","Action"].map(h => (
+                    {["Membre","Email","UID","Grade","Admin","Inactivité","MDP","Action"].map(h => (
                       <th key={h} style={{ padding: "10px 14px", textAlign: "left", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -1562,6 +1562,24 @@ export default function App() {
                           style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: 12, cursor: "pointer" }}>
                           {["Charbon","Soldat","Soldat d'élite","Lieutenant","Commandant","Sous Capo","Capo","Chef","Ancien Membre"].map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
+                      </td>
+                      <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                        {m.name === "DUME"
+                          ? <span style={{ fontSize: 11, color: COLORS.gold, fontWeight: 700 }}>👑 Maître</span>
+                          : <button onClick={async () => {
+                              const newVal = !m.is_admin
+                              if (!confirm(`${newVal ? "Donner" : "Retirer"} le rôle admin à ${m.name} ?`)) return
+                              await supabase.from("members").update({ is_admin: newVal }).eq("id", m.id)
+                              loadData()
+                            }} style={{
+                              padding: "4px 10px", borderRadius: 6, border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                              background: m.is_admin ? `${COLORS.gold}33` : COLORS.bg,
+                              color: m.is_admin ? COLORS.gold : COLORS.textMuted,
+                              border: `1px solid ${m.is_admin ? COLORS.gold : COLORS.border}`
+                            }}>
+                            {m.is_admin ? "⚙️ Admin" : "— Membre"}
+                          </button>
+                        }
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         {(() => {
