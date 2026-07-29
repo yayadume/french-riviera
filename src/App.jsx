@@ -751,6 +751,12 @@ export default function App() {
                     if (h >= 24) return `${Math.floor(h/24)}j ${Math.floor(h%24)}h`
                     return `${Math.floor(h)}h ${Math.floor((h - Math.floor(h)) * 60)}m`
                   }
+                  const formatAvailableAt = (date) => {
+                    if (!date) return ""
+                    const d = date.toLocaleDateString('fr-FR')
+                    const h = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h')
+                    return `${d} à ${h}`
+                  }
 
                   // Slots globaux pour Armu et Fleeca (2 slots par 7j pour toute l'équipe)
                   const getGlobalSlots = (type) => {
@@ -763,9 +769,11 @@ export default function App() {
                     const dispo2 = !slot2 || (now - slot2) / 3600000 >= 168
                     const remaining1 = slot1 && !dispo1 ? 168 - (now - slot1) / 3600000 : 0
                     const remaining2 = slot2 && !dispo2 ? 168 - (now - slot2) / 3600000 : 0
+                    const availableAt1 = slot1 && !dispo1 ? new Date(slot1.getTime() + 168 * 3600000) : null
+                    const availableAt2 = slot2 && !dispo2 ? new Date(slot2.getTime() + 168 * 3600000) : null
                     return [
-                      { date: slot1, dispo: dispo1, remaining: remaining1, who: allActs[0] ? members.find(m => m.id === allActs[0].member_id)?.name : null },
-                      { date: slot2, dispo: dispo2, remaining: remaining2, who: allActs[1] ? members.find(m => m.id === allActs[1].member_id)?.name : null },
+                      { date: slot1, dispo: dispo1, remaining: remaining1, availableAt: availableAt1, who: allActs[0] ? members.find(m => m.id === allActs[0].member_id)?.name : null },
+                      { date: slot2, dispo: dispo2, remaining: remaining2, availableAt: availableAt2, who: allActs[1] ? members.find(m => m.id === allActs[1].member_id)?.name : null },
                     ]
                   }
 
@@ -789,6 +797,7 @@ export default function App() {
                       const diffH = lastDate ? (now - lastDate) / 3600000 : null
                       const available = !lastDate || diffH >= cooldown
                       const remaining = lastDate && !available ? cooldown - diffH : 0
+                      const availableAt = lastDate && !available ? new Date(lastDate.getTime() + cooldown * 3600000) : null
                       return (
                         <div key={type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${COLORS.border}` }}>
                           <div>
@@ -803,7 +812,10 @@ export default function App() {
                           </div>
                           {available
                             ? <span style={{ color: COLORS.success, fontSize: 13, fontWeight: 600 }}>✓ Disponible</span>
-                            : <span style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</span>
+                            : <div style={{ textAlign: "right" }}>
+                                <div style={{ color: COLORS.warning, fontSize: 13, fontWeight: 600 }}>⏳ {formatRemaining(remaining)}</div>
+                                <div style={{ color: COLORS.textMuted, fontSize: 11, marginTop: 2 }}>dès le {formatAvailableAt(availableAt)}</div>
+                              </div>
                           }
                         </div>
                       )
@@ -828,7 +840,10 @@ export default function App() {
                                 <div style={{ marginTop: 4 }}>
                                   {slot.dispo
                                     ? <span style={{ color: COLORS.success, fontSize: 12, fontWeight: 600 }}>✓ Disponible</span>
-                                    : <span style={{ color: COLORS.warning, fontSize: 12, fontWeight: 600 }}>⏳ {formatRemaining(slot.remaining)}</span>
+                                    : <div>
+                                        <div style={{ color: COLORS.warning, fontSize: 12, fontWeight: 600 }}>⏳ {formatRemaining(slot.remaining)}</div>
+                                        <div style={{ color: COLORS.textMuted, fontSize: 10, marginTop: 2 }}>dès le {formatAvailableAt(slot.availableAt)}</div>
+                                      </div>
                                   }
                                 </div>
                               </div>
