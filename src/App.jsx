@@ -761,9 +761,22 @@ export default function App() {
                   // Slots globaux pour Armu et Fleeca (2 slots par 7j pour toute l'équipe)
                   const getGlobalSlots = (type) => {
                     const allActs = allArmuFleeca.filter(a => a.type === type).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    // Regrouper les lignes par occurrence (un même événement = même created_at, plusieurs participants)
+                    const occurrences = []
+                    const byKey = new Map()
+                    allActs.forEach(a => {
+                      const key = a.created_at
+                      if (!byKey.has(key)) {
+                        const group = { created_at: a.created_at, memberIds: [] }
+                        byKey.set(key, group)
+                        occurrences.push(group)
+                      }
+                      byKey.get(key).memberIds.push(a.member_id)
+                    })
+                    const namesFor = (occ) => occ ? occ.memberIds.map(id => members.find(m => m.id === id)?.name).filter(Boolean).join(", ") : null
                     // Les 2 dernières occurrences globales
-                    const slot1 = allActs[0] ? new Date(allActs[0].created_at) : null
-                    const slot2 = allActs[1] ? new Date(allActs[1].created_at) : null
+                    const slot1 = occurrences[0] ? new Date(occurrences[0].created_at) : null
+                    const slot2 = occurrences[1] ? new Date(occurrences[1].created_at) : null
                     // Chaque slot se recharge 7j après son utilisation
                     const dispo1 = !slot1 || (now - slot1) / 3600000 >= 168
                     const dispo2 = !slot2 || (now - slot2) / 3600000 >= 168
@@ -772,8 +785,8 @@ export default function App() {
                     const availableAt1 = slot1 && !dispo1 ? new Date(slot1.getTime() + 168 * 3600000) : null
                     const availableAt2 = slot2 && !dispo2 ? new Date(slot2.getTime() + 168 * 3600000) : null
                     return [
-                      { date: slot1, dispo: dispo1, remaining: remaining1, availableAt: availableAt1, who: allActs[0] ? members.find(m => m.id === allActs[0].member_id)?.name : null },
-                      { date: slot2, dispo: dispo2, remaining: remaining2, availableAt: availableAt2, who: allActs[1] ? members.find(m => m.id === allActs[1].member_id)?.name : null },
+                      { date: slot1, dispo: dispo1, remaining: remaining1, availableAt: availableAt1, who: namesFor(occurrences[0]) },
+                      { date: slot2, dispo: dispo2, remaining: remaining2, availableAt: availableAt2, who: namesFor(occurrences[1]) },
                     ]
                   }
 
