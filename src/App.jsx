@@ -104,7 +104,7 @@ export default function App() {
   const [activities, setActivities] = useState([])
   const [loginForm, setLoginForm] = useState({ email: "", password: "" })
   const [loginError, setLoginError] = useState("")
-  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, date_heure: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) })
+  const [form, setForm] = useState({ member_id: "", semaine_id: "", type: "vente", drogue: "", quantity: 1, participant2: "", participant3: "", date_heure: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16) })
   const [message, setMessage] = useState("")
   const [newMember, setNewMember] = useState("")
   const [newMemberEmail, setNewMemberEmail] = useState("")
@@ -211,6 +211,32 @@ export default function App() {
   const handleSubmit = async () => {
     const targetId = isAdmin ? parseInt(form.member_id) : member?.id
     if (!targetId) return setMessage("❌ Sélectionne un membre")
+
+    if (form.type === "Armu" || form.type === "Fleeca") {
+      const nbParticipantsRequis = form.type === "Armu" ? 1 : 2
+      const participantIds = (form.type === "Armu" ? [form.participant2] : [form.participant2, form.participant3])
+        .filter(v => v !== "").map(v => parseInt(v))
+      if (participantIds.length !== nbParticipantsRequis) {
+        return setMessage(`❌ Sélectionne ${nbParticipantsRequis === 1 ? "le" : "les"} ${nbParticipantsRequis} participant${nbParticipantsRequis > 1 ? "s" : ""} supplémentaire${nbParticipantsRequis > 1 ? "s" : ""}`)
+      }
+      const allIds = [targetId, ...participantIds]
+      if (new Set(allIds).size !== allIds.length) return setMessage("❌ Un même membre ne peut pas être sélectionné plusieurs fois")
+      const createdAt = new Date(form.date_heure).toISOString()
+      const semaineId = parseInt(form.semaine_id)
+      const rows = allIds.map(id => ({
+        member_id: id, semaine_id: semaineId, type: form.type, drogue: null, quantity: 1, created_at: createdAt
+      }))
+      const { error } = await supabase.from("activities").insert(rows)
+      if (error) setMessage("❌ Erreur : " + error.message)
+      else {
+        setMessage("✅ Activité ajoutée !")
+        setForm({ ...form, participant2: "", participant3: "" })
+        loadData()
+        setTimeout(() => setMessage(""), 3000)
+      }
+      return
+    }
+
     const { error } = await supabase.from("activities").insert([{
       member_id: targetId, semaine_id: parseInt(form.semaine_id), type: form.type,
       drogue: form.type === "vente" ? form.drogue : null,
@@ -1304,8 +1330,31 @@ export default function App() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Type d'activité</label>
-                {sel(form.type, v => setForm({...form, type: v, drogue: "", quantity: ["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(v) ? 1 : form.quantity}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
+                {sel(form.type, v => setForm({...form, type: v, drogue: "", participant2: "", participant3: "", quantity: ["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(v) ? 1 : form.quantity}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
               </div>
+              {(form.type === "Armu" || form.type === "Fleeca") && (
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>
+                    {form.type === "Armu" ? "Coéquipier (2 participants au total)" : "Participants supplémentaires (3 participants au total)"}
+                  </label>
+                  {(() => {
+                    const primaryId = isAdmin ? parseInt(form.member_id) : member?.id
+                    const eligibleMembers = members.filter(m => m.grade !== "Ancien Membre")
+                    const fields = form.type === "Armu" ? ["participant2"] : ["participant2", "participant3"]
+                    return fields.map((field, idx) => {
+                      const otherSelected = fields.filter(f => f !== field).map(f => form[f]).filter(v => v !== "")
+                      const options = eligibleMembers.filter(m => m.id !== primaryId && !otherSelected.includes(String(m.id)))
+                      return (
+                        <div key={field} style={{ marginBottom: idx < fields.length - 1 ? 10 : 0 }}>
+                          {sel(form[field], v => setForm({...form, [field]: v}),
+                            [<option key="" value="">-- Choisir participant {idx + 2} --</option>, ...options.map(m => <option key={m.id} value={m.id}>{m.name}</option>)]
+                          )}
+                        </div>
+                      )
+                    })
+                  })()}
+                </div>
+              )}
               {form.type === "vente" && (
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", marginBottom: 10, color: COLORS.textMuted, fontSize: 13 }}>Drogue</label>
