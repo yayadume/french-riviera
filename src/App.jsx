@@ -117,7 +117,7 @@ export default function App() {
   const [plantSaving, setPlantSaving] = useState(false)
   const [primeConfig, setPrimeConfig] = useState({ charbon: 25, soldat: 33, haut_grade: 40, meilleur: 50 })
   const [primeSaving, setPrimeSaving] = useState(false)
-  const [pointsConfig, setPointsConfig] = useState({ plantation: 1.5, vente: 0.25, cambu: 3, atm: 3, apu: 3, go_fast: 3, prison: -0.5, armu: 62.5, fleeca: 150, coma: -30 })
+  const [pointsConfig, setPointsConfig] = useState({ plantation: 1.5, vente: 0.25, cambu: 3, atm: 3, apu: 3, go_fast: 3, prison: -0.5, armu: 62.5, fleeca: 150, coma: -30, radar_nb: -10, radar_montant: -0.01 })
   const [pointsSaving, setPointsSaving] = useState(false)
   const [contratsFerti, setContratsFerti] = useState([])
   const [fertiSearch, setFertiSearch] = useState("")
@@ -1090,7 +1090,7 @@ export default function App() {
                         <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.fleeca}</td>
                         <td style={{ padding: "12px 10px", textAlign: "center", color: s.coma > 0 ? COLORS.danger : COLORS.text }}>{s.coma ?? 0}</td>
                         <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.radar_count ?? 0}</td>
-                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{(s.radar_montant ?? 0).toLocaleString()} $</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{(s.radar_montant_total ?? 0).toLocaleString()} $</td>
                         <td style={{ padding: "12px 10px", textAlign: "center" }}>
                           <span style={{ fontWeight: 700, color: pctColor, fontSize: 13 }}>{pctTotal}%</span>
                         </td>
@@ -1869,19 +1869,19 @@ export default function App() {
                   { key: "plantation", label: "🌿 Plantation" }, { key: "vente", label: "💊 Vente" }, { key: "cambu", label: "🏠 Cambu" },
                   { key: "atm", label: "🏧 ATM" }, { key: "apu", label: "🚔 APU" }, { key: "go_fast", label: "🚗 Go fast" },
                   { key: "prison", label: "⛓️ Prison" }, { key: "armu", label: "🚛 Armu" }, { key: "fleeca", label: "🏦 Fleeca" },
-                  { key: "coma", label: "😵 Coma" },
+                  { key: "coma", label: "😵 Coma" }, { key: "radar_nb", label: "🚨 Radar (points / amende)" }, { key: "radar_montant", label: "🚨 Radar (points / $ d'amende)" },
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
-                    <input type="number" value={pointsConfig[key] ?? 0} onChange={e => setPointsConfig({ ...pointsConfig, [key]: parseFloat(e.target.value) || 0 })}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: (key === "prison" || key === "coma") ? COLORS.danger : COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
+                    <input type="number" step="any" value={pointsConfig[key] ?? 0} onChange={e => setPointsConfig({ ...pointsConfig, [key]: parseFloat(e.target.value) || 0 })}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: (key === "prison" || key === "coma" || key === "radar_nb" || key === "radar_montant") ? COLORS.danger : COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {goldBtn(pointsSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
                   setPointsSaving(true)
-                  await supabase.from("points_config").update({ plantation: pointsConfig.plantation, vente: pointsConfig.vente, cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu, go_fast: pointsConfig.go_fast, prison: pointsConfig.prison, armu: pointsConfig.armu, fleeca: pointsConfig.fleeca, coma: pointsConfig.coma, updated_at: new Date().toISOString() }).eq("id", 1)
+                  await supabase.from("points_config").update({ plantation: pointsConfig.plantation, vente: pointsConfig.vente, cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu, go_fast: pointsConfig.go_fast, prison: pointsConfig.prison, armu: pointsConfig.armu, fleeca: pointsConfig.fleeca, coma: pointsConfig.coma, radar_nb: pointsConfig.radar_nb, radar_montant: pointsConfig.radar_montant, updated_at: new Date().toISOString() }).eq("id", 1)
                   setPointsSaving(false); setMessage("✅ Points mis à jour !"); setTimeout(() => setMessage(""), 3000)
                 }, { opacity: pointsSaving ? 0.6 : 1 })}
                 {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
