@@ -28,7 +28,7 @@ const MEMBER_PHOTOS = {
 }
 
 const DROGUES_LIST = ["HERO","SPOREX","TRANQ","PURPLE","MEXICANA","COKE","CARTE PP","CRACK","WEED","METH","ECSTASY","B MAGIC"]
-const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison"]
+const TYPES = ["vente","Plantation","Apu","Cambu","Go fast","Atm","Armu","Fleeca","Prison","Coma","Radar"]
 const MEDALS = ["🥇","🥈","🥉"]
 const ACTION_TYPES = ["Atm","Apu","Cambu","Go fast"]
 const EDGE_URL = "https://npwhfcczhrqgrbtxyaeu.supabase.co/functions/v1/change-password"
@@ -117,7 +117,7 @@ export default function App() {
   const [plantSaving, setPlantSaving] = useState(false)
   const [primeConfig, setPrimeConfig] = useState({ charbon: 25, soldat: 33, haut_grade: 40, meilleur: 50 })
   const [primeSaving, setPrimeSaving] = useState(false)
-  const [pointsConfig, setPointsConfig] = useState({ plantation: 1.5, vente: 0.25, cambu: 3, atm: 3, apu: 3, go_fast: 3, prison: -0.5, armu: 62.5, fleeca: 150 })
+  const [pointsConfig, setPointsConfig] = useState({ plantation: 1.5, vente: 0.25, cambu: 3, atm: 3, apu: 3, go_fast: 3, prison: -0.5, armu: 62.5, fleeca: 150, coma: -30 })
   const [pointsSaving, setPointsSaving] = useState(false)
   const [contratsFerti, setContratsFerti] = useState([])
   const [fertiSearch, setFertiSearch] = useState("")
@@ -1057,7 +1057,7 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: COLORS.blue }}>
-                    {["Rang","Membre","Points","🌿 Plant.","💊 Vente","🏠 Cambu","🏧 ATM","🚔 APU","🚗 Go fast","⛓️ Prison","🚛 Armu","🏦 Fleeca","📊 Quotas"].map(h => (
+                    {["Rang","Membre","Points","🌿 Plant.","💊 Vente","🏠 Cambu","🏧 ATM","🚔 APU","🚗 Go fast","⛓️ Prison","🚛 Armu","🏦 Fleeca","😵 Coma","🚨 Radar (nb)","🚨 Radar ($)","📊 Quotas"].map(h => (
                       <th key={h} style={{ padding: "12px 10px", textAlign: h === "Rang" || h === "Membre" ? "left" : "center", color: COLORS.gold, fontWeight: 600, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -1088,6 +1088,9 @@ export default function App() {
                         <td style={{ padding: "12px 10px", textAlign: "center", color: s.prison > 0 ? COLORS.danger : COLORS.text }}>{s.prison}</td>
                         <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.armu}</td>
                         <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.fleeca}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center", color: s.coma > 0 ? COLORS.danger : COLORS.text }}>{s.coma ?? 0}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{s.radar_count ?? 0}</td>
+                        <td style={{ padding: "12px 10px", textAlign: "center" }}>{(s.radar_montant ?? 0).toLocaleString()} $</td>
                         <td style={{ padding: "12px 10px", textAlign: "center" }}>
                           <span style={{ fontWeight: 700, color: pctColor, fontSize: 13 }}>{pctTotal}%</span>
                         </td>
@@ -1358,7 +1361,7 @@ export default function App() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Type d'activité</label>
-                {sel(form.type, v => setForm({...form, type: v, drogue: "", participant2: "", participant3: "", quantity: ["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(v) ? 1 : form.quantity}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
+                {sel(form.type, v => setForm({...form, type: v, drogue: "", participant2: "", participant3: "", quantity: ["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(v) ? 1 : v === "Coma" ? 1 : v === "Radar" ? "" : form.quantity}), TYPES.map(t => <option key={t} value={t}>{t}</option>))}
               </div>
               {(form.type === "Armu" || form.type === "Fleeca") && (
                 <div style={{ marginBottom: 14 }}>
@@ -1415,7 +1418,9 @@ export default function App() {
                 </div>
               )}
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>Quantité</label>
+                <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>
+                  {form.type === "Radar" ? "Montant de l'amende ($)" : "Quantité"}
+                </label>
                 {["Apu","Cambu","Go fast","Atm","Armu","Fleeca"].includes(form.type)
                   ? <div style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: COLORS.textMuted, boxSizing: "border-box", fontSize: 14 }}>1 <span style={{ fontSize: 12, color: COLORS.textMuted }}>(action unique)</span></div>
                   : inp(form.quantity, v => setForm({...form, quantity: v}), "number")
@@ -1864,18 +1869,19 @@ export default function App() {
                   { key: "plantation", label: "🌿 Plantation" }, { key: "vente", label: "💊 Vente" }, { key: "cambu", label: "🏠 Cambu" },
                   { key: "atm", label: "🏧 ATM" }, { key: "apu", label: "🚔 APU" }, { key: "go_fast", label: "🚗 Go fast" },
                   { key: "prison", label: "⛓️ Prison" }, { key: "armu", label: "🚛 Armu" }, { key: "fleeca", label: "🏦 Fleeca" },
+                  { key: "coma", label: "😵 Coma" },
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <label style={{ display: "block", marginBottom: 6, color: COLORS.textMuted, fontSize: 13 }}>{label}</label>
                     <input type="number" value={pointsConfig[key] ?? 0} onChange={e => setPointsConfig({ ...pointsConfig, [key]: parseFloat(e.target.value) || 0 })}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: key === "prison" ? COLORS.danger : COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#0a1628", color: (key === "prison" || key === "coma") ? COLORS.danger : COLORS.text, boxSizing: "border-box", fontSize: 14 }} />
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {goldBtn(pointsSaving ? "Sauvegarde..." : "💾 Sauvegarder", async () => {
                   setPointsSaving(true)
-                  await supabase.from("points_config").update({ plantation: pointsConfig.plantation, vente: pointsConfig.vente, cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu, go_fast: pointsConfig.go_fast, prison: pointsConfig.prison, armu: pointsConfig.armu, fleeca: pointsConfig.fleeca, updated_at: new Date().toISOString() }).eq("id", 1)
+                  await supabase.from("points_config").update({ plantation: pointsConfig.plantation, vente: pointsConfig.vente, cambu: pointsConfig.cambu, atm: pointsConfig.atm, apu: pointsConfig.apu, go_fast: pointsConfig.go_fast, prison: pointsConfig.prison, armu: pointsConfig.armu, fleeca: pointsConfig.fleeca, coma: pointsConfig.coma, updated_at: new Date().toISOString() }).eq("id", 1)
                   setPointsSaving(false); setMessage("✅ Points mis à jour !"); setTimeout(() => setMessage(""), 3000)
                 }, { opacity: pointsSaving ? 0.6 : 1 })}
                 {message && <span style={{ color: message.includes("✅") ? COLORS.success : COLORS.danger, fontSize: 13 }}>{message}</span>}
